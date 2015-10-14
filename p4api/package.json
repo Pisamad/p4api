@@ -1,0 +1,25 @@
+{
+  "name": "p4api",
+  "description": "Simple Perforce API",
+  "keywords": [
+    "perforce",
+    "p4"
+  ],
+  "version": "0.1.0",
+  "author": {
+    "name": "Pierre DUOT",
+    "email": "pierre.duot@gmail.com"
+  },
+  "files": [
+    "p4.js",
+    "index.js"
+  ],
+  "dependencies": {
+    "q":">=1.4.1"
+  },
+  "main": ".",
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}
