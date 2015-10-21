@@ -164,34 +164,36 @@
     }
     
     /**
-     * Takes a object and transform it to input to p4 -G 
+     * Takes a object and transform it in marchal format and input into stream to p4 -G
      * @param {object} inObject - The input
+     * @param {stream} stdin stream
      * @returns {string} the result
      */
-    function convertIn(inObject){
-        if (typeof inObject === 'string') return inObject;
+    function writeMarchal(inObject, stream){
+        if (typeof inObject === 'string') {
+            stream.write(inObject);
+        }else {
 
-        var result = '{';
-        var buf = new Buffer(4);
-        for (var key in inObject) {
-            if (inObject.hasOwnProperty(key)) {
-                var value = String(inObject[key])
-                buf.writeUInt32LE(key.length,0);
-                var keyLen = buf.toString();
-                buf.writeUInt32LE(value.length,0);
-                var valueLen = buf.toString();
-                result = result
-                .concat('s')
-                .concat(keyLen)
-                .concat(key)
-                .concat('s')
-                .concat(valueLen)
-                .concat(value);
+            stream.write('{');
+            var keyLen = new Buffer(4);
+            var valueLen = new Buffer(4);
+            for (var key in inObject) {
+                if (inObject.hasOwnProperty(key)) {
+                    var value = String(inObject[key])
+                    keyLen.writeUInt32LE(key.length,0);
+                    valueLen.writeUInt32LE(value.length,0);
+                    stream.write('s');
+                    stream.write(keyLen);
+                    stream.write(key);
+                    stream.write('s');
+                    stream.write(valueLen);
+                    stream.write(value);
+                }
             }
-        }        
-        
-        result = result.concat('0');
-        return result;
+
+            stream.write('0');
+        }
+        stream.end();
     }
      
 
@@ -252,8 +254,7 @@
             var child = spawn('p4', p4Cmd , this.options);
 
             if (dataIn) {
-                child.stdin.write(convertIn(dataIn));
-                child.stdin.end();
+                writeMarchal(dataIn, child.stdin)
             }
             
             child.stdout.on('data', function(data) {
