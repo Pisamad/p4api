@@ -5,7 +5,7 @@
     "perforce",
     "p4"
   ],
-  "version": "1.1.0",
+  "version": "2.0.0",
   "author": {
     "name": "Pierre DUOT",
     "email": "pierre.duot@gmail.com"
@@ -20,6 +20,6 @@
   "main": ".",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/Pisamad/p4api.git"
   }
 }
