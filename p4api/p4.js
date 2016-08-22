@@ -1,4 +1,4 @@
-(function () {
+module.exports = (function () {
     /*jslint node:true*/
     'use strict';
     /**
@@ -12,21 +12,21 @@
      * @returns {object} P4 - The P4 module constructor.
      */
     var Q = require("q");
-    var _ = require('underscore');
+    var _ = require('lodash');
     var spawn = require('child_process').spawn;
 
     /**
      * @constructor
      */
-    var p4 ={
-        cwd : process.cwd(),
-        env : process.env,
-        options : {env:process.env},
+    var p4 = {
+        cwd: process.cwd(),
+        env: process.env,
+        options: {env: process.env},
     };
-    
+
     /**
-     * A function for parsing shell-like quoted arguments into an array, 
-     * similar to Python's shlex.split. Also allows quotes mid-way through a string, 
+     * A function for parsing shell-like quoted arguments into an array,
+     * similar to Python's shlex.split. Also allows quotes mid-way through a string,
      * and parses them out for you. Returns false on failure (from unbalanced quotes).
      * @param {string} str
      */
@@ -51,7 +51,7 @@
                     }
                 }
                 if (!quoteOpen && lookForClose === -1) {
-                    if (underQuote) arg=arg.slice(1,-1);
+                    if (underQuote) arg = arg.slice(1, -1);
                     out.push(arg);
                 } else if (quoteOpen && lookForClose === -1) {
                     lookForClose = x;
@@ -80,12 +80,13 @@
         }
         return quoteOpen ? false : out;
     }
+
     /**
      * Takes output from p4 -G and parses it to an object.
      * @param {string} outString - The output
      * @returns {object} the result
      */
-    function convertOut(outString){
+    function convertOut(outString) {
         var buf = Buffer.isBuffer(outString) ? outString : new Buffer(outString);
         var result = [];
         var index = 0;
@@ -94,19 +95,17 @@
         var prompt = '';
         var bufLength = buf.length;
         // Look for the start of a valid answer
-        while (i < bufLength)
-        {
-            var elt = buf.toString('ascii',i,i+1);
+        while (i < bufLength) {
+            var elt = buf.toString('ascii', i, i + 1);
             if (elt == '{') break;
             prompt += elt;
             i++;
         }
-        result[index] = {code:'prompt', prompt:prompt};
+        result[index] = {code: 'prompt', prompt: prompt};
 
         // Parse answer
-        while (i < bufLength)
-        {
-            var elt = buf.toString('ascii',i,i+1);
+        while (i < bufLength) {
+            var elt = buf.toString('ascii', i, i + 1);
 
             switch (elt) {
                 case '{':
@@ -120,9 +119,9 @@
                     // A text
                     i++;
                     var lg = buf.readUInt32LE(i);
-                    i+=4;
-                    var str = buf.toString('ascii', i, i+lg);
-                    i+=lg;
+                    i += 4;
+                    var str = buf.toString('ascii', i, i + lg);
+                    i += lg;
                     if (key == '') {
                         // Text is a key
                         key = str;
@@ -137,7 +136,7 @@
                     // A integer
                     i++;
                     var val = buf.readUInt32LE(i);
-                    i+=4;
+                    i += 4;
                     if (key == '') {
                         // Text is a key
                         // !!! Syntax error
@@ -162,26 +161,26 @@
         }
         return result;
     }
-    
+
     /**
      * Takes a object and transform it in marchal format and input into stream to p4 -G
      * @param {object} inObject - The input
      * @param {stream} stdin stream
      * @returns {string} the result
      */
-    function writeMarchal(inObject, stream){
+    function writeMarchal(inObject, stream) {
         if (typeof inObject === 'string') {
             stream.write(inObject);
-        }else {
+        } else {
 
             stream.write('{');
             var keyLen = new Buffer(4);
             var valueLen = new Buffer(4);
             for (var key in inObject) {
                 if (inObject.hasOwnProperty(key)) {
-                    var value = String(inObject[key])
-                    keyLen.writeUInt32LE(key.length,0);
-                    valueLen.writeUInt32LE(value.length,0);
+                    var value = String(inObject[key]);
+                    keyLen.writeUInt32LE(key.length, 0);
+                    valueLen.writeUInt32LE(value.length, 0);
                     stream.write('s');
                     stream.write(keyLen);
                     stream.write(key);
@@ -195,7 +194,6 @@
         }
         stream.end();
     }
-     
 
 
     /**
@@ -206,10 +204,10 @@
      * @param {object} opts - The options object
      * @returns {object} this
      */
-    p4.setOpts = function(opts){
+    p4.setOpts = function (opts) {
         var self = this;
-        Object.keys(opts).forEach(function(key){
-            if(key === 'cwd'){
+        Object.keys(opts).forEach(function (key) {
+            if (key === 'cwd') {
                 // Don't allow changing cwd via setOpts...
                 return;
             }
@@ -218,11 +216,11 @@
         return this;
     };
 
-    p4.addOpts = function(opts){
+    p4.addOpts = function (opts) {
         var self = this;
         self.options = self.options || {};
-        Object.keys(opts).forEach(function(key){
-            if(key === 'cwd'){
+        Object.keys(opts).forEach(function (key) {
+            if (key === 'cwd') {
                 // Don't allow changing cwd via setOpts...
                 return;
             }
@@ -236,36 +234,46 @@
      * @param {string} command - The command to run
      * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
      */
-    p4.cmd = function(command, dataIn) {
-        console.log('--> p4 '+command);
+    p4.cmd = function (command, dataIn) {
+        console.log('--> p4 ' + command);
         var deferred = Q.defer();
 
         var self = this;
         var dataOut = new Buffer(0);
         var dataErr = new Buffer(0);
+        var globalOptions = ['-G'];
 
         this.options.cwd = this.cwd;
         this.options.env = this.options.env || {};
         this.options.env.PWD = this.cwd;
         this.options.stdio = ['pipe', 'pipe', 'pipe'];
 
-        var p4Cmd=['-G'].concat(shlex(command));
-        try{
-            var child = spawn('p4', p4Cmd , this.options);
+        // Force P4 env overriding env comming from P4CONFIG
+        if (this.options.env.P4CLIENT) {globalOptions = globalOptions.concat(['-c', this.options.env.P4CLIENT])}
+        if (this.options.env.P4PORT) {globalOptions = globalOptions.concat(['-p', this.options.env.P4PORT])}
+        if (this.options.env.P4USER) {globalOptions = globalOptions.concat(['-u', this.options.env.P4USER])}
+
+        var p4Cmd = globalOptions.concat(shlex(command));
+        try {
+            var child = spawn('p4', p4Cmd, this.options);
+
+            child.on('error', function(err){
+                deferred.reject(err);
+            });
 
             if (dataIn) {
                 writeMarchal(dataIn, child.stdin)
             }
-            
-            child.stdout.on('data', function(data) {
+
+            child.stdout.on('data', function (data) {
                 dataOut = Buffer.concat([dataOut, data]);
             });
 
-            child.stderr.on('data', function(data) {
+            child.stderr.on('data', function (data) {
                 dataErr = Buffer.concat([dataOut, data]);
             });
 
-            child.on('close', function() {
+            child.on('close', function () {
                 dataOut = convertOut(dataOut);
                 // Format the result  like an object : 
                 // {'stat':[{},{},...], 'error':[{},{},...], 
@@ -273,49 +281,75 @@
                 // 'prompt':'...'}
                 var result = {};
                 var dataOutLength = dataOut.length;
-                for (var i=0, len=dataOutLength; i < len; i++)
-                {
+                for (var i = 0, len = dataOutLength; i < len; i++) {
                     var key = dataOut[i].code;
                     if ((key == 'text') || (key == 'binary')) {
                         result.data = result.data || '';
                         result.data += dataOut[i].data;
-                    }else if (key == 'prompt'){
+                    } else if (key == 'prompt') {
                         result[key] = dataOut[i].prompt;
-                    }else {
+                    } else {
                         result[key] = result[key] || [];
                         result[key].push(dataOut[i]);
                     }
                 }
                 // Is there stderr ==> error
-                if (dataErr.length > 0){
+                if (dataErr.length > 0) {
                     result.error = result.error || [];
-                    result.error.push({code:'error', data:dataErr.toString(), severity:3, generic:4});
+                    result.error.push({code: 'error', data: dataErr.toString(), severity: 3, generic: 4});
                 }
 
 
                 // Special case for 'set' command
-                if (command==='set'){
+                if (command === 'set') {
                     // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
-                    var p4Set=result.prompt.match(/P4.*=[^\s]*/g) || [];
+                    var p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
                     var p4SetLength = p4Set.length;
-                    result.stat=[{}];
-                    for (var i=0; i<p4SetLength; i++){
-                        var set=p4Set[i].match(/([^=]*)=(.*)/);
-                        result.stat[0][set[1]]=set[2];
+                    result.stat = [{}];
+                    for (var i = 0; i < p4SetLength; i++) {
+                        var set = p4Set[i].match(/([^=]*)=(.*)/);
+                        result.stat[0][set[1]] = set[2];
                     }
                 }
 
                 deferred.resolve(result);
             });
 
-        } catch(e){
-            deferred.reject(new Error('Err : '+e));
+        } catch (e) {
+            deferred.reject(new Error('Err : ' + e));
         }
 
         return deferred.promise;
     };
 
-    exports.p4 = p4;
+    /**
+     * Launch a P4VC cmd
+     */
+    p4.visual = function (cmd) {
+
+        var options = [];
+        if (this.options.env.P4PORT) options = options.concat(['-p', this.options.env.P4PORT]);
+        if (this.options.env.P4USER) options = options.concat(['-u', this.options.env.P4USER]);
+        if (this.options.env.P4CLIENT) options = options.concat(['-c', this.options.env.P4CLIENT]);
+
+        var deferred = Q.defer();
+        var visualCmd = options.concat(shlex(cmd));
+        try {
+            var child = spawn('p4vc', visualCmd);
+
+            child.on('close', function () {
+                deferred.resolve();
+            });
+
+        } catch (e) {
+            deferred.reject(new Error('Err : ' + e));
+        }
+
+        return deferred.promise;
+
+    };
+
+    return p4;
 
 })();
 

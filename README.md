@@ -2,7 +2,7 @@
 Perforce API using marchal syntax and promise
 
 ## Syntax
-	var P4 = require("p4api").p4;
+	var P4 = require('p4api/p4');
 	
 	P4.cmd(p4Cmd, input).then(function(out){
 		...
@@ -28,7 +28,7 @@ Where :
 
 ## Examples
 ### List of depots
-	var P4 = require("p4api").p4;
+	var P4 = require('p4api/p4');
 	
 	P4.cmd("depots").then(function(out){console.log(out);});
 
