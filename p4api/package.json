@@ -7,7 +7,7 @@
     "node",
     "js"
   ],
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "Pierre DUOT",
     "email": "pierre.duot@gmail.com"
@@ -17,7 +17,8 @@
     "index.js"
   ],
   "dependencies": {
-    "q":">=1.4.1"
+    "q":">=1.4.1",
+    "lodash":">=4.16.4"
   },
   "main": ".",
   "repository": {

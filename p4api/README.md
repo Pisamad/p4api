@@ -2,9 +2,9 @@
 Perforce API using marchal syntax and promise
 
 ## Syntax
-	var P4 = require('p4api/p4');
+	var p4 = require('p4api/p4');
 	
-	P4.cmd(p4Cmd, input).then(function(out){
+	p4.cmd(p4Cmd, input).then(function(out){
 		...
 	});
 
@@ -13,7 +13,7 @@ Where :
 - `p4Cmd` is the Perforce command (string) with options separated with space.
 - `input` is a optional string for input value (like password for login command).
 
-`P4.cmd()` return a promise wich is resolved with the marchal result of the command as an object (`out`).
+`p4.cmd()` return a promise wich is resolved with the marchal result of the command as an object (`out`).
 
 `out` has the following structure :
 
@@ -28,9 +28,9 @@ Where :
 
 ## Examples
 ### List of depots
-	var P4 = require('p4api/p4');
+	var p4 = require('p4api');
 	
-	P4.cmd("depots").then(function(out){console.log(out);});
+	p4.cmd("depots").then(function(out){console.log(out);});
 
 Result is like :
 
@@ -57,7 +57,7 @@ Result is like :
 	}
 ### Command Error
 	...
-	P4.cmd("mistake")
+	p4.cmd("mistake")
 	...
 Result is :
 
@@ -75,7 +75,7 @@ Result is :
  
 ### Login (commande with prompt and input)
 	...
-	P4.cmd("login", "myGoodPasswd")
+	p4.cmd("login", "myGoodPasswd")
 	...
 Result is like :
 
@@ -97,7 +97,7 @@ Result is like :
 
 ### Check Login (commande with param)
 	...
-	P4.cmd("login -s")
+	p4.cmd("login -s")
 	...
 Result is like :
 
@@ -114,7 +114,7 @@ Result is like :
 
 ### Clear viewpathes of the current Client
     function clearViewPathes() {
-        return P4.cmd('client -o')
+        return p4.cmd('client -o')
         .then(function(out) {
             client = out.stat[0];
             for (var i = 0;; i++) {
@@ -122,10 +122,10 @@ Result is like :
                 delete client['View' + i];
             }
 
-            return P4.cmd('client -i', client);
+            return p4.cmd('client -i', client);
         })
         .then(function(out) {
-            return P4.cmd('sync -f');
+            return p4.cmd('sync -f');
         })
     }
 
