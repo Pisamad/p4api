@@ -14,6 +14,7 @@ module.exports = (function () {
     var Q = require("q");
     var _ = require('lodash');
     var spawn = require('child_process').spawn;
+    var spawnSync = require('child_process').spawnSync;
 
     /**
      * @constructor
@@ -320,6 +321,84 @@ module.exports = (function () {
         }
 
         return deferred.promise;
+    };
+
+    /**
+     * Synchronously Run a command .
+     * @param {string} command - The command to run
+     * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
+     */
+    p4.cmdSync = function (command, dataIn) {
+        console.log('--> sync p4 ' + command);
+
+        var self = this;
+        var dataOut = new Buffer(0);
+        var dataErr = new Buffer(0);
+        var globalOptions = ['-G'];
+
+        this.options.cwd = this.cwd;
+        this.options.env = this.options.env || {};
+        this.options.env.PWD = this.cwd;
+        this.options.stdio = ['pipe', 'pipe', 'pipe'];
+
+        if (dataIn) {
+            writeMarchal(dataIn, this.options.input)
+        }
+        
+        // Force P4 env overriding env comming from P4CONFIG
+        if (this.options.env.P4CLIENT) {globalOptions = globalOptions.concat(['-c', this.options.env.P4CLIENT])}
+        if (this.options.env.P4PORT) {globalOptions = globalOptions.concat(['-p', this.options.env.P4PORT])}
+        if (this.options.env.P4USER) {globalOptions = globalOptions.concat(['-u', this.options.env.P4USER])}
+
+        var p4Cmd = globalOptions.concat(shlex(command));
+        try {
+            var child = spawnSync('p4', p4Cmd, this.options);
+
+            dataOut = convertOut(child.stdout);
+            dataErr = child.stderr;
+            
+            // Format the result  like an object : 
+            // {'stat':[{},{},...], 'error':[{},{},...], 
+            //  'value':{'code':'text' or 'binary', 'data':'...'},
+            // 'prompt':'...'}
+            var result = {};
+            var dataOutLength = dataOut.length;
+            for (var i = 0, len = dataOutLength; i < len; i++) {
+                var key = dataOut[i].code;
+                if ((key == 'text') || (key == 'binary')) {
+                    result.data = result.data || '';
+                    result.data += dataOut[i].data;
+                } else if (key == 'prompt') {
+                    result[key] = dataOut[i].prompt;
+                } else {
+                    result[key] = result[key] || [];
+                    result[key].push(dataOut[i]);
+                }
+            }
+            // Is there stderr ==> error
+            if (dataErr.length > 0) {
+                result.error = result.error || [];
+                result.error.push({code: 'error', data: dataErr.toString(), severity: 3, generic: 4});
+            }
+
+
+            // Special case for 'set' command
+            if (command === 'set') {
+                // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
+                var p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
+                var p4SetLength = p4Set.length;
+                result.stat = [{}];
+                for (var i = 0; i < p4SetLength; i++) {
+                    var set = p4Set[i].match(/([^=]*)=(.*)/);
+                    result.stat[0][set[1]] = set[2];
+                }
+            }
+
+            return result;
+
+        } catch (e) {
+            throw(new Error('Err : ' + e));
+        }
     };
 
     /**

@@ -1,12 +1,24 @@
 # p4api
 Perforce API using marchal syntax and promise
+Allow p4 command in asynchro (promise) or synchro mode.
 
 ## Syntax
 	var p4 = require('p4api/p4');
 	
-	p4.cmd(p4Cmd, input).then(function(out){
+    # Asynchro mode
+	p4.cmd(p4Cmd, input)
+    .then(function(out){
 		...
-	});
+	}, function(err){
+        throw('p4 not found')
+    });
+    
+    # Synchro mode
+    try{
+        out = p4.cmdSync(p4Cmd, input)
+    } catch(err){
+        throw('p4 not found')
+    }    
 
 Where :
 
@@ -14,6 +26,7 @@ Where :
 - `input` is a optional string for input value (like password for login command).
 
 `p4.cmd()` return a promise wich is resolved with the marchal result of the command as an object (`out`).
+`p4.cmdSync()` return the marchal result of the command as an object (`out`).
 
 `out` has the following structure :
 
