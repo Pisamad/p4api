@@ -1,5 +1,6 @@
 # p4api
-Perforce API using marchal syntax and promise
+Perforce API using marchal syntax and promise.
+
 Allow p4 command in asynchro (promise) or synchro mode.
 
 ## Syntax
