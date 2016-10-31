@@ -121,12 +121,12 @@ Result is like :
 	    {
 	      "code": "stat",
 	      "TicketExpiration": "85062",
-	      "user": "xxxx"
+	      "user": "toto"
 	    }
 	  ]
 	}       
 
-### Clear viewpathes of the current Client
+### Clear viewpathes of the current Client (promise mode)
     function clearViewPathes() {
         return p4.cmd('client -o')
         .then(function(out) {
@@ -143,4 +143,46 @@ Result is like :
         })
     }
 
+### Clear viewpathes of the current Client (synchro mode)
+    function clearViewPathes() {
+        var out = p4.cmdSync('client -o')
+        var client = out.stat[0]
+        for (var i = 0;; i++) {
+            if (client['View' + i] === undefined) break;
+            delete client['View' + i];
+        }
+        p4.cmdSync('client -i', client);
+        p4.cmdSync('sync -f');
+    }
+    
+### Error handling
+    function P4Error(msg){
+        this.name = 'p4 error'
+        this.message = msg
+    }
+    
+    function p4Async(cmd, input){
+        return p4.cmd(cmd, input)
+        .then(function(out){
+            if (out.error !== undefined){
+                throw new P4Error(out.error)
+            } else {
+                return out
+            }
+        }, function(err){
+            throw new Error('p4 not found')
+        })
+    }
 
+    function p4Sync(cmd, input){
+        try{
+            var out = p4.cmdSync(cmd, input)
+        } catch(err){
+            throw new Error('p4 not found')
+        }
+        if (out.error !== undefined){
+            throw new P4Error(out.error)
+        }
+        return out
+    }
+    

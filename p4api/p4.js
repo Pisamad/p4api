@@ -11,7 +11,7 @@ module.exports = (function () {
      *
      * @returns {object} P4 - The P4 module constructor.
      */
-    var Q = require("q");
+    var Q = require("bluebird");
     var _ = require('lodash');
     var spawn = require('child_process').spawn;
     var spawnSync = require('child_process').spawnSync;
@@ -141,7 +141,7 @@ module.exports = (function () {
                     if (key == '') {
                         // Text is a key
                         // !!! Syntax error
-                        console.log('Syntax error');
+                        console.error('Syntax error');
                     }
                     else {
                         // Text is the value of last key
@@ -155,9 +155,8 @@ module.exports = (function () {
                     break;
                 default:
                     // Syntax error, we return the original string
-                    console.log('Syntax error or result is a string');
-                    return outString;
-                    break;
+                    console.error('Syntax error or result is a string');
+                    return outString;                    
             }
         }
         return result;
@@ -236,7 +235,7 @@ module.exports = (function () {
      * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
      */
     p4.cmd = function (command, dataIn) {
-        console.log('--> p4 ' + command);
+//        console.log('--> p4 ' + command);
         var deferred = Q.defer();
 
         var self = this;
@@ -317,7 +316,7 @@ module.exports = (function () {
             });
 
         } catch (e) {
-            deferred.reject(new Error('Err : ' + e));
+            deferred.reject(new Error(e));
         }
 
         return deferred.promise;
@@ -329,7 +328,7 @@ module.exports = (function () {
      * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
      */
     p4.cmdSync = function (command, dataIn) {
-        console.log('--> sync p4 ' + command);
+//        console.log('--> sync p4 ' + command);
 
         var self = this;
         var dataOut = new Buffer(0);
@@ -397,7 +396,7 @@ module.exports = (function () {
             return result;
 
         } catch (e) {
-            throw(new Error('Err : ' + e));
+            throw new Error(e);
         }
     };
 
