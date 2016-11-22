@@ -4,6 +4,7 @@ Perforce API using marchal syntax and promise.
 Allow p4 command in asynchro (promise) or synchro mode.
 
 ## Syntax
+``` javascript
 	var p4 = require('p4api/p4');
 	
     # Asynchro mode
@@ -20,7 +21,7 @@ Allow p4 command in asynchro (promise) or synchro mode.
     } catch(err){
         throw('p4 not found')
     }    
-
+```
 Where :
 
 - `p4Cmd` is the Perforce command (string) with options separated with space.
@@ -42,12 +43,14 @@ Where :
 
 ## Examples
 ### List of depots
+``` javascript
 	var p4 = require('p4api');
 	
 	p4.cmd("depots").then(function(out){console.log(out);});
+```
 
 Result is like :
-
+``` json
 	{
 	  "prompt": "",
 	  "stat": [
@@ -69,12 +72,17 @@ Result is like :
 	    }
 	  ]
 	}
+```
+
 ### Command Error
+``` javascript
 	...
 	p4.cmd("mistake")
 	...
-Result is :
+```
 
+Result is :
+``` json
 	{
 	  "prompt": "",
 	  "error": [
@@ -86,13 +94,16 @@ Result is :
 	    }
 	  ]
 	}       
- 
+```
+
 ### Login (commande with prompt and input)
+``` javascript
 	...
 	p4.cmd("login", "myGoodPasswd")
 	...
+```
 Result is like :
-
+``` json
 	{
 	  "prompt": "Enter password: ↵",
 	  "info": [
@@ -108,13 +119,16 @@ Result is like :
 	    }
 	  ]
 	}       
+```
 
 ### Check Login (commande with param)
+``` javascript
 	...
 	p4.cmd("login -s")
 	...
+```
 Result is like :
-
+``` json
 	{
 	  "prompt": "",
 	  "stat": [
@@ -125,8 +139,10 @@ Result is like :
 	    }
 	  ]
 	}       
+```
 
 ### Clear viewpathes of the current Client (promise mode)
+``` javascript
     function clearViewPathes() {
         return p4.cmd('client -o')
         .then(function(out) {
@@ -142,8 +158,10 @@ Result is like :
             return p4.cmd('sync -f');
         })
     }
+```
 
 ### Clear viewpathes of the current Client (synchro mode)
+``` javascript
     function clearViewPathes() {
         var out = p4.cmdSync('client -o')
         var client = out.stat[0]
@@ -154,8 +172,10 @@ Result is like :
         p4.cmdSync('client -i', client);
         p4.cmdSync('sync -f');
     }
-    
+```
+
 ### Error handling
+``` javascript
     function P4Error(msg){
         this.name = 'p4 error'
         this.message = msg
@@ -185,4 +205,4 @@ Result is like :
         }
         return out
     }
-    
+```
