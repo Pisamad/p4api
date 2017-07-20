@@ -1,33 +1,36 @@
 {
   "name": "p4api",
   "description": "Simple Perforce API",
+  "private": true,
+  "license": "UNLICENSED",
   "keywords": [
     "perforce",
     "p4",
     "node",
     "js"
   ],
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": {
-    "name": "Pierre DUOT",
-    "email": "pierre.duot@gmail.com"
+    "name": "Pisamad",
+    "email": "pierre@pisamad.fr"
+  },
+  "scripts": {
+    "test": "node ./node_modules/mocha/bin/mocha"
   },
   "files": [
-    "p4.js",
-    "index.js"
+    "p4.js"
   ],
   "dependencies": {
-    "bluebird": "^3.4.6",
-    "lodash": ">=4.16.4",
-    "q": ">=1.4.1"
+    "bluebird": "^3.5.0",
+    "lodash": "^4.17.4"
   },
-  "main": ".",
+  "main": "p4.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/Pisamad/p4api.git"
   },
   "devDependencies": {
-    "mocha": "^3.1.2",
-    "should": "^11.1.1"
+    "mocha": "^3.4.2",
+    "should": "^11.2.1"
   }
 }

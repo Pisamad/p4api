@@ -98,7 +98,7 @@ module.exports = (function () {
         // Look for the start of a valid answer
         while (i < bufLength) {
             var elt = buf.toString('ascii', i, i + 1);
-            if (elt == '{') break;
+            if (elt === '{') break;
             prompt += elt;
             i++;
         }
@@ -123,7 +123,7 @@ module.exports = (function () {
                     i += 4;
                     var str = buf.toString('ascii', i, i + lg);
                     i += lg;
-                    if (key == '') {
+                    if (key === '') {
                         // Text is a key
                         key = str;
                     }
@@ -138,7 +138,7 @@ module.exports = (function () {
                     i++;
                     var val = buf.readUInt32LE(i);
                     i += 4;
-                    if (key == '') {
+                    if (key === '') {
                         // Text is a key
                         // !!! Syntax error
                         console.error('Syntax error');
@@ -156,7 +156,7 @@ module.exports = (function () {
                 default:
                     // Syntax error, we return the original string
                     console.error('Syntax error or result is a string');
-                    return outString;                    
+                    return outString;
             }
         }
         return result;
@@ -172,7 +172,6 @@ module.exports = (function () {
         if (typeof inObject === 'string') {
             stream.write(inObject);
         } else {
-
             stream.write('{');
             var keyLen = new Buffer(4);
             var valueLen = new Buffer(4);
@@ -249,15 +248,21 @@ module.exports = (function () {
         this.options.stdio = ['pipe', 'pipe', 'pipe'];
 
         // Force P4 env overriding env comming from P4CONFIG
-        if (this.options.env.P4CLIENT) {globalOptions = globalOptions.concat(['-c', this.options.env.P4CLIENT])}
-        if (this.options.env.P4PORT) {globalOptions = globalOptions.concat(['-p', this.options.env.P4PORT])}
-        if (this.options.env.P4USER) {globalOptions = globalOptions.concat(['-u', this.options.env.P4USER])}
+        if (this.options.env.P4CLIENT) {
+            globalOptions = globalOptions.concat(['-c', this.options.env.P4CLIENT])
+        }
+        if (this.options.env.P4PORT) {
+            globalOptions = globalOptions.concat(['-p', this.options.env.P4PORT])
+        }
+        if (this.options.env.P4USER) {
+            globalOptions = globalOptions.concat(['-u', this.options.env.P4USER])
+        }
 
         var p4Cmd = globalOptions.concat(shlex(command));
         try {
             var child = spawn('p4', p4Cmd, this.options);
 
-            child.on('error', function(err){
+            child.on('error', function (err) {
                 deferred.reject(err);
             });
 
@@ -281,17 +286,23 @@ module.exports = (function () {
                 // 'prompt':'...'}
                 var result = {};
                 var dataOutLength = dataOut.length;
+                var oldKey = '';
                 for (var i = 0, len = dataOutLength; i < len; i++) {
                     var key = dataOut[i].code;
-                    if ((key == 'text') || (key == 'binary')) {
-                        result.data = result.data || '';
-                        result.data += dataOut[i].data;
-                    } else if (key == 'prompt') {
+                    if ((key === 'text') || (key === 'binary')) {
+                        result.data = result.data || [];
+                        if (key === oldKey) {
+                            result.data[result.data.length] += dataOut[i].data;
+                        } else {
+                            result.data.push(dataOut[i].data);
+                        }
+                    } else if (key === 'prompt') {
                         result[key] = dataOut[i].prompt;
                     } else {
                         result[key] = result[key] || [];
                         result[key].push(dataOut[i]);
                     }
+                    oldKey = key;
                 }
                 // Is there stderr ==> error
                 if (dataErr.length > 0) {
@@ -339,15 +350,26 @@ module.exports = (function () {
         this.options.env = this.options.env || {};
         this.options.env.PWD = this.cwd;
         this.options.stdio = ['pipe', 'pipe', 'pipe'];
+        this.options.input = '';
 
         if (dataIn) {
-            writeMarchal(dataIn, this.options.input)
+            writeMarchal(dataIn, {
+                write:function(s){this.options.input+=s}.bind(this),
+                end:function(){}
+                }
+            )
         }
-        
+
         // Force P4 env overriding env comming from P4CONFIG
-        if (this.options.env.P4CLIENT) {globalOptions = globalOptions.concat(['-c', this.options.env.P4CLIENT])}
-        if (this.options.env.P4PORT) {globalOptions = globalOptions.concat(['-p', this.options.env.P4PORT])}
-        if (this.options.env.P4USER) {globalOptions = globalOptions.concat(['-u', this.options.env.P4USER])}
+        if (this.options.env.P4CLIENT) {
+            globalOptions = globalOptions.concat(['-c', this.options.env.P4CLIENT])
+        }
+        if (this.options.env.P4PORT) {
+            globalOptions = globalOptions.concat(['-p', this.options.env.P4PORT])
+        }
+        if (this.options.env.P4USER) {
+            globalOptions = globalOptions.concat(['-u', this.options.env.P4USER])
+        }
 
         var p4Cmd = globalOptions.concat(shlex(command));
         try {
@@ -355,24 +377,30 @@ module.exports = (function () {
 
             dataOut = convertOut(child.stdout);
             dataErr = child.stderr;
-            
+
             // Format the result  like an object : 
             // {'stat':[{},{},...], 'error':[{},{},...], 
-            //  'value':{'code':'text' or 'binary', 'data':'...'},
+            //  'data':[data, ...],
             // 'prompt':'...'}
             var result = {};
             var dataOutLength = dataOut.length;
+            var oldKey = '';
             for (var i = 0, len = dataOutLength; i < len; i++) {
                 var key = dataOut[i].code;
-                if ((key == 'text') || (key == 'binary')) {
-                    result.data = result.data || '';
-                    result.data += dataOut[i].data;
-                } else if (key == 'prompt') {
+                if ((key === 'text') || (key === 'binary')) {
+                    result.data = result.data || [];
+                    if (key === oldKey) {
+                        result.data[result.data.length] += dataOut[i].data;
+                    } else {
+                        result.data.push(dataOut[i].data);
+                    }
+                } else if (key === 'prompt') {
                     result[key] = dataOut[i].prompt;
                 } else {
                     result[key] = result[key] || [];
                     result[key].push(dataOut[i]);
                 }
+                oldKey = key;
             }
             // Is there stderr ==> error
             if (dataErr.length > 0) {
