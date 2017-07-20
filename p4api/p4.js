@@ -286,23 +286,17 @@ module.exports = (function () {
                 // 'prompt':'...'}
                 var result = {};
                 var dataOutLength = dataOut.length;
-                var oldKey = '';
                 for (var i = 0, len = dataOutLength; i < len; i++) {
                     var key = dataOut[i].code;
-                    if ((key === 'text') || (key === 'binary')) {
-                        result.data = result.data || [];
-                        if (key === oldKey) {
-                            result.data[result.data.length] += dataOut[i].data;
-                        } else {
-                            result.data.push(dataOut[i].data);
-                        }
-                    } else if (key === 'prompt') {
+                    if ((key == 'text') || (key == 'binary')) {
+                        result.data = result.data || '';
+                        result.data += dataOut[i].data;
+                    } else if (key == 'prompt') {
                         result[key] = dataOut[i].prompt;
                     } else {
                         result[key] = result[key] || [];
                         result[key].push(dataOut[i]);
                     }
-                    oldKey = key;
                 }
                 // Is there stderr ==> error
                 if (dataErr.length > 0) {
@@ -380,27 +374,21 @@ module.exports = (function () {
 
             // Format the result  like an object : 
             // {'stat':[{},{},...], 'error':[{},{},...], 
-            //  'data':[data, ...],
+            //  'value':{'code':'text' or 'binary', 'data':'...'},
             // 'prompt':'...'}
             var result = {};
             var dataOutLength = dataOut.length;
-            var oldKey = '';
             for (var i = 0, len = dataOutLength; i < len; i++) {
                 var key = dataOut[i].code;
-                if ((key === 'text') || (key === 'binary')) {
-                    result.data = result.data || [];
-                    if (key === oldKey) {
-                        result.data[result.data.length] += dataOut[i].data;
-                    } else {
-                        result.data.push(dataOut[i].data);
-                    }
-                } else if (key === 'prompt') {
+                if ((key == 'text') || (key == 'binary')) {
+                    result.data = result.data || '';
+                    result.data += dataOut[i].data;
+                } else if (key == 'prompt') {
                     result[key] = dataOut[i].prompt;
                 } else {
                     result[key] = result[key] || [];
                     result[key].push(dataOut[i]);
                 }
-                oldKey = key;
             }
             // Is there stderr ==> error
             if (dataErr.length > 0) {
