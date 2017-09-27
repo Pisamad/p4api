@@ -8,7 +8,7 @@
     "node",
     "js"
   ],
-  "version": "2.2.1",
+  "version": "2.2.2",
   "author": {
     "name": "Pisamad",
     "email": "pierre@pisamad.fr"
@@ -29,7 +29,7 @@
     "url": "https://github.com/Pisamad/p4api.git"
   },
   "devDependencies": {
-    "mocha": "^3.4.2",
-    "should": "^11.2.1"
+    "mocha": "^3.5.3",
+    "should": "^13.1.0"
   }
 }
