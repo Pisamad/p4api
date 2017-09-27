@@ -1,10 +1,10 @@
-var p4 = require('../p4');
-var assert = require('assert');
-var should = require('should');
+let p4 = require('../p4');
+let assert = require('assert');
+let should = require('should');
 
 function p4WithSyncIs(sync, cmd, input, test){
     if (sync){
-        var out = p4.cmdSync(cmd, input)
+        let out = p4.cmdSync(cmd, input);
         test(out)
     }else{
         return p4.cmd(cmd, input).then(test)
@@ -12,14 +12,14 @@ function p4WithSyncIs(sync, cmd, input, test){
 }
 
 
-describe('p4 sync', function(){p4Test(true)})
-describe('p4 Async', function(){p4Test(false)})
+describe('p4 sync', function(){p4Test(true)});
+describe('p4 Async', function(){p4Test(false)});
 
     
 
 function p4Test(sync) {
     
-    function p4Cmd(cmd,input, test){return p4WithSyncIs(sync, cmd, input, test)};
+    function p4Cmd(cmd,input, test){return p4WithSyncIs(sync, cmd, input, test)}
     
     describe('set', function() {
         it('command p4 set', function() {
@@ -27,7 +27,7 @@ function p4Test(sync) {
                 should(out).have.property('stat')
             })
         })
-    })
+    });
     
     describe('login', function() {
         it.skip('command p4 login', function() {
@@ -35,7 +35,7 @@ function p4Test(sync) {
                 should(out).have.property('stat')
             })
         })
-    })
+    });
 
     describe('bad command', function() {
         it('bad commande make an error', function() {

@@ -1,12 +1,12 @@
-var readline = require('readline');
+let readline = require('readline');
 
-var rl = readline.createInterface({
+let rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
 function hidden(query, callback) {
-    var stdin = process.openStdin();
+    let stdin = process.openStdin();
     process.stdin.on("data", function(char) {
         char = char + "";
         switch (char) {
@@ -16,7 +16,7 @@ function hidden(query, callback) {
                 stdin.pause();
                 break;
             default:
-                process.stdout.write("\033[2K\033[200D" + query + Array(rl.line.length+1).join("*"));
+                process.stdout.write("\033[2K\033[200D" + query + new Array(rl.line.length+1).join("*"));
                 break;
         }
     });
@@ -30,16 +30,16 @@ function hidden(query, callback) {
 
 
 module.exports = function credential(next){
-    var result = {login:'', password:''}
+    let result = {login:'', password:''};
     rl.question('login : ', function(login){
-        result.login = login
+        result.login = login;
         hidden("password : ", function(password) {
-            result.password = password
-            rl.close()
+            result.password = password;
+            rl.close();
             next(result)
         });
     })  
-}
+};
 
 
 
