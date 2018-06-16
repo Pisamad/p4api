@@ -17,22 +17,22 @@ To test it, you need to have installed "Helixx Core Apps" and "Helix Versioning 
 
 ## Syntax
 ``` javascript
-import {P4} from 'p4api';
-let p4 = new P4({P4PORT: 'p4server:1666'});
+import {P4} from "p4api";
+let p4 = new P4({P4PORT: "p4server:1666"});
 
 // Asynchro mode
 p4.cmd(p4Cmd, input)
   .then(function (out) {
     // ...
   }, function (err) {
-    throw ('p4 not found');
+    throw ("p4 not found");
   });
 
 // Synchro mode
 try {
   let out = p4.cmdSync(p4Cmd, input);
 } catch (err) {
-  throw ('p4 not found');
+  throw ("p4 not found");
 }
 ```
 Where :
@@ -57,8 +57,8 @@ P4 object constructor takes a structure of P4 environnment variables like P4PORT
 ## Examples
 ### List of depots
 ``` javascript
-const P4 = require('p4api');
-let p4 = new P4({P4PORT: 'p4server:1666'});
+const P4 = require("p4api");
+let p4 = new P4({P4PORT: "p4server:1666"});
     
 p4.cmd("depots").then(function(out){console.log(out);});
 ```
@@ -98,13 +98,13 @@ Result is like :
 Result is :
 ``` json
 {
-  'prompt': '',
-  'error': [
+  "prompt": "",
+  "error": [
     {
-      'code': 'error',
-      'data': "Unknown command.  Try 'p4 help' for info.\n",
-      'severity': 3,
-      'generic': 1
+      "code": "error",
+      "data": "Unknown command.  Try "p4 help" for info.\n",
+      "severity": 3,
+      "generic": 1
     }
   ]
 }
@@ -119,17 +119,17 @@ Result is :
 Result is like :
 ``` json
 {
-  'prompt': 'Enter password: ↵',
-  'info': [
+  "prompt": "Enter password: ↵",
+  "info": [
     {
-      'code': 'info',
-      'data': 'Success:  Password verified.',
-      'level': 5
+      "code": "info",
+      "data": "Success:  Password verified.",
+      "level": 5
     },
     {
-      'code': 'info',
-      'data': 'User toto logged in.',
-      'level': 0
+      "code": "info",
+      "data": "User toto logged in.",
+      "level": 0
     }
   ]
 }
@@ -144,12 +144,12 @@ Result is like :
 Result is like :
 ``` json
 {
-  'prompt': '',
-  'stat': [
+  "prompt": "",
+  "stat": [
     {
-      'code': 'stat',
-      'TicketExpiration': '85062',
-      'user': 'toto'
+      "code": "stat",
+      "TicketExpiration": "85062",
+      "user": "toto"
     }
   ]
 }   
@@ -158,18 +158,18 @@ Result is like :
 ### Clear viewpathes of the current Client (promise mode)
 ``` javascript
 function clearViewPathes() {
-  return p4.cmd('client -o')
+  return p4.cmd("client -o")
     .then(function (out) {
       client = out.stat[0];
       for (let i = 0;; i++) {
-        if (client['View' + i] === undefined) break;
-        delete client['View' + i];
+        if (client["View" + i] === undefined) break;
+        delete client["View" + i];
       }
 
-      return p4.cmd('client -i', client);
+      return p4.cmd("client -i", client);
     })
     .then(function (out) {
-      return p4.cmd('sync -f');
+      return p4.cmd("sync -f");
     });
 }
 ```
@@ -177,22 +177,22 @@ function clearViewPathes() {
 ### Clear viewpathes of the current Client (synchro mode)
 ``` javascript
 function clearViewPathes() {
-  let out = p4.cmdSync('client -o');
+  let out = p4.cmdSync("client -o");
   let client = out.stat[0];
 
   for (let i = 0;; i++) {
-    if (client['View' + i] === undefined) break;
-    delete client['View' + i];
+    if (client["View" + i] === undefined) break;
+    delete client["View" + i];
   }
-  p4.cmdSync('client -i', client);
-  p4.cmdSync('sync -f');
+  p4.cmdSync("client -i", client);
+  p4.cmdSync("sync -f");
 }
 ```
 
 ### Error handling
 ``` javascript
 function P4Error(msg) {
-  this.name = 'p4 error';
+  this.name = "p4 error";
   this.message = msg;
 }
 
@@ -205,7 +205,7 @@ function p4Async(cmd, input) {
         return out;
       }
     }, (err) => {
-      throw new Error('p4 not found');
+      throw new Error("p4 not found");
     });
 }
 
@@ -213,7 +213,7 @@ function p4Sync(cmd, input) {
   try {
     let out = p4.cmdSync(cmd, input);
   } catch (err) {
-    throw new Error('p4 not found');
+    throw new Error("p4 not found");
   }
   if (out.error !== undefined) {
     throw new P4Error(out.error);
