@@ -1,0 +1,48 @@
+{
+  "name": "p4api",
+  "version": "3.0.0",
+  "description": "Simple Perforce API",
+  "main": "lib/library.js",
+  "scripts": {
+    "build": "webpack --env dev && webpack --env build && npm run test",
+    "dev": "webpack --progress --colors --watch --env dev",
+    "test": "mocha --timeout 10000 --require babel-core/register --colors ./test/*.spec.js",
+    "test:watch": "mocha --timeout 0 --require babel-core/register --colors -w ./test/*.spec.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pisamad/p4api.git"
+  },
+  "keywords": [
+    "perforce",
+    "p4"
+  ],
+  "author": "pisamad",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/Pisamad/p4api/issues"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.0",
+    "lodash": "^4.17.4",
+    "shelljs": "^0.8.2"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^8.0.3",
+    "babel-loader": "^7.1.4",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-stage-0": "^6.24.1",
+    "chai": "^4.1.2",
+    "eslint": "^4.13.1",
+    "eslint-loader": "^1.9.0",
+    "mocha": "^4.0.1",
+    "webpack": "^3.10.0",
+    "yargs": "^10.0.3"
+  }
+}

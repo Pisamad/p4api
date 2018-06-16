@@ -1,0 +1,11 @@
+{
+  "compact": "true",
+  "presets": [
+    "env"
+  ],
+  "plugins": [
+    "babel-plugin-add-module-exports",
+    "transform-async-to-generator",
+    "transform-runtime"
+  ]
+}
