@@ -18,7 +18,7 @@
     "p4"
   ],
   "author": "pisamad",
-  "license": "UNLICENSED",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/Pisamad/p4api/issues"
   },
