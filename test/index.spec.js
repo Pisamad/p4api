@@ -47,7 +47,7 @@ describe('p4api test', () => {
       await server.create();
       await server.start();
 
-      p4api = new P4({P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4APITIMEOUT: 1000});
+      p4api = new P4({P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 1000});
     });
     after(async () => {
       if (server.isActive()) {
