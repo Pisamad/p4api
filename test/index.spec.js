@@ -1,12 +1,17 @@
 /* global describe, it, before */
 
 import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import {P4} from '../lib/p4api';
 import {server} from './helper/server';
 import _ from 'lodash';
 
-// chai.expect();
+chai.use(chaiAsPromised);
+
 const expect = chai.expect;
+const assert = chai.assert;
+
+chai.should();
 
 server.silent = true; // Server action is not verbose
 
@@ -17,6 +22,9 @@ console.clear();
 describe('p4api test', () => {
   describe('No connected commands', () => {
     before(() => {
+    });
+    beforeEach(() => {
+      p4Res = null;
     });
     describe('P4 set', () => {
       p4api = new P4();
@@ -31,6 +39,36 @@ describe('p4api test', () => {
     });
   });
 
+  describe('Server down', () => {
+    before(async () => {
+      if (server.isActive()) {
+        await server.stop();
+      }
+      await server.create();
+      await server.start();
+
+      p4api = new P4({P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4APITIMEOUT: 1000});
+    });
+    after(async () => {
+      if (server.isActive()) {
+        await server.stop();
+      }
+    });
+    beforeEach(() => {
+      p4Res = null;
+    });
+
+    describe('P4 login', () => {
+      it('Async Timeout exception', () => {
+        return p4api.cmd('login').should.be.rejected;
+      });
+
+      it('Sync Timeout exception', () => {
+        assert.throws(()=>p4api.cmdSync('login'));
+      });
+    });
+  });
+
   describe('Connected commands', () => {
     before(async () => {
       if (server.isActive()) {
@@ -40,6 +78,9 @@ describe('p4api test', () => {
       await server.start();
 
       p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8'});
+    });
+    beforeEach(() => {
+      p4Res = null;
     });
 
     after(async () => {
@@ -68,7 +109,8 @@ describe('p4api test', () => {
 
     describe('Try object input injection with client command', () => {
       it('Create a client from a description', async () => {
-        p4Res = await p4api.cmd('client -i', { code: 'stat',
+        p4Res = await p4api.cmd('client -i', {
+          code: 'stat',
           Client: 'myClient',
           Owner: 'bob',
           Host: '',
@@ -81,7 +123,8 @@ describe('p4api test', () => {
           View1: '//team1/... //myClient/team1/...',
           View2: '//depot/... //myClient/depot/...',
           Type: 'writeable',
-          Backup: 'enable' });
+          Backup: 'enable'
+        });
         // console.dir(p4Res)
         expect(p4Res).to.not.have.property('error');
         expect(p4Res).to.have.property('info').that.is.an('array');

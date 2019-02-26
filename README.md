@@ -13,7 +13,7 @@ $ npm install p4api --save
 ##Development
 Use build action (npm or yarn) to build lib/p4api.js.
 
-To test it, you need to have installed "Helixx Core Apps" and "Helix Versioning Engine" (p4 & p4d). 
+To test it, you need to have installed "Helix Core Apps" and "Helix Versioning Engine" (p4 & p4d). 
 
 ## Syntax
 ``` javascript
@@ -35,7 +35,7 @@ try {
   throw ("p4 not found");
 }
 ```
-Where :
+Where:
 
 - `p4Cmd` is the Perforce command (string) with options separated with space.
 - `input` is a optional string for input value (like password for login command).
@@ -43,14 +43,20 @@ Where :
 `p4.cmd()` return a promise wich is resolved with the marchal result of the command as an object (`out`).
 `p4.cmdSync()` return the marchal result of the command as an object (`out`).
 
-`out` has the following structure :
+`out` has the following structure:
 
-- `prompt` : string printed by perforce before the result (else empty string)
-- `stat` : if exists, list of all result with code=stat
-- `info` : if exists, list of all result with code=info
-- `error` : if exists, list of all result with code=error
+- `prompt`: string printed by perforce before the result (else empty string)
+- `stat`: if exists, list of all result with code=stat
+- `info`: if exists, list of all result with code=info
+- `error`: if exists, list of all result with code=error
 
-P4 object constructor takes a structure of P4 environnment variables like P4PORT, P4CHARSET, P4USER, P4CLIENT, ... 
+P4 object is constructed with a structure containing:
+- all P4 environnment variables like P4PORT, P4CHARSET, P4USER, P4CLIENT, ...
+- p4api specific option like:
+  * P4API_TIMEOUT: timeout in ms for cmd & cmdSync process
+
+When timeout is reached, cmd is rejected and cmdSync is throwed with:
+- ```P4APIError({name:'p4api error', msg:'Timeout <timeout>ms reached')``` 
 
 
 
@@ -63,7 +69,7 @@ let p4 = new P4({P4PORT: "p4server:1666"});
 p4.cmd("depots").then(function(out){console.log(out);});
 ```
 
-Result is like :
+Result is like:
 ``` json
     {
       "prompt": "",
@@ -95,7 +101,7 @@ Result is like :
     ...
 ```
 
-Result is :
+Result is:
 ``` json
 {
   "prompt": "",
@@ -116,7 +122,7 @@ Result is :
     p4.cmd("login", "myGoodPasswd")
     ...
 ```
-Result is like :
+Result is like:
 ``` json
 {
   "prompt": "Enter password: ↵",
@@ -141,7 +147,7 @@ Result is like :
     p4.cmd("login -s")
     ...
 ```
-Result is like :
+Result is like:
 ``` json
 {
   "prompt": "",
@@ -220,5 +226,32 @@ function p4Sync(cmd, input) {
   }
   return out;
 }
+```
 
+### timeout handling
+``` javascript
+const P4 = require("p4api");
+let p4 = new P4({P4PORT: "p4server:1666", P4API_TIMEOUT: 5000});
+
+p4.cmd(cmd, input)
+.then((out) => {
+  return out;
+}, (err) => {
+  if (err.name === "p4api error") {
+    throw new Error("p4 timeout");
+  }
+  throw new Error("p4 not found");
+});
+
+
+
+try {
+  let out = p4.cmdSync(cmd, input);
+} catch (err) {
+  if (err.name === "p4api error") {
+    throw new Error("p4 timeout");
+  }
+  throw new Error("p4 not found");
+}
+return out;
 ```
