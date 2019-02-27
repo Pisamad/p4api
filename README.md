@@ -40,7 +40,7 @@ Where:
 - `p4Cmd` is the Perforce command (string) with options separated with space.
 - `input` is a optional string for input value (like password for login command).
 
-`p4.cmd()` return a promise wich is resolved with the marchal result of the command as an object (`out`).
+`p4.cmd()` return a promise wich is resolved with the marchal result of the command as an object (`out`).\
 `p4.cmdSync()` return the marchal result of the command as an object (`out`).
 
 `out` has the following structure:
@@ -59,6 +59,8 @@ When timeout is reached, cmd is rejected and cmdSync is throwed
 with a ```P4ApiTimeoutError``` ```Error``` instance 
 with message like ```'Timeout <timeout>ms reached')``` 
 
+#### Cancellation feature :
+A promise returned by p4.cmd() can be canceled with ```cancel()``` method, killing launched p4 process.
 
 
 ## Examples
@@ -257,3 +259,16 @@ try {
   throw new Error("p4 not found");
 }
 ```
+
+### Cancellation
+``` javascript
+let p4Promise = p4.cmd("clients");
+...
+let   result = null;
+if (DoNotNeedResult) {
+  p4Promise.cancel();
+} else {
+  result = await p4Promise;
+}
+```
+
