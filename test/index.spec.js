@@ -15,7 +15,6 @@ chai.should();
 
 server.silent = true; // Server action is not verbose
 
-let p4api;
 let p4Res;
 
 console.clear();
@@ -27,7 +26,8 @@ describe('p4api test', () => {
       p4Res = null;
     });
     describe('P4 set', () => {
-      p4api = new P4();
+      let p4api = new P4();
+
       it('return a set of P4 env var', async () => {
         p4Res = await p4api.cmd('set');
         expect(p4Res).to.have.property('stat').that.is.an('array');
@@ -47,7 +47,6 @@ describe('p4api test', () => {
       await server.create();
       await server.start();
 
-      p4api = new P4({P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 1000});
     });
     after(async () => {
       if (server.isActive()) {
@@ -58,18 +57,38 @@ describe('p4api test', () => {
       p4Res = null;
     });
 
-    describe('P4 login', () => {
-      it('Async Timeout exception', () => {
-        return p4api.cmd('login').should.be.rejected;
-      });
+    [1000, 2000].forEach(timeout => {
+      describe('P4 login to muted server with timeout=' + timeout, () => {
+        let p4api = new P4({P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout});
 
-      it('Sync Timeout exception', () => {
-        assert.throws(()=>p4api.cmdSync('login'));
+        it('Async Timeout exception', (done) => {
+          p4api.cmd('login', 'thePassword').should.be.rejected.notify(done);
+        });
+
+        it('Sync Timeout exception', () => {
+          assert.throws(() => p4api.cmdSync('login', 'thePassword'));
+        });
+      });
+    });
+    [1000, 2000].forEach(timeout => {
+      describe('P4 login to unmuted server with timeout=' + timeout, () => {
+        let p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout});
+
+        it('Sync Timeout ' + timeout + ' not reached', () => {
+          assert.doesNotThrow(() => p4api.cmdSync('login', 'thePassword'));
+        });
+
+        it('Async Timeout ' + timeout + ' not reached', (done) => {
+          p4api.cmd('login', 'thePassword').should.be.fulfilled.notify(done);
+        });
+
       });
     });
   });
 
   describe('Connected commands', () => {
+    let p4api;
+
     before(async () => {
       if (server.isActive()) {
         await server.stop();
@@ -77,7 +96,7 @@ describe('p4api test', () => {
       await server.create();
       await server.start();
 
-      p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8'});
+      p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 5000});
     });
     beforeEach(() => {
       p4Res = null;
