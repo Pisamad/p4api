@@ -84,8 +84,6 @@ export class P4 {
       let timeoutHandle = null;
       let timeoutFired = false;
 
-      let child = spawn('p4', p4Cmd, this.options);
-
       if (timeout > 0) {
         timeoutHandle = setTimeout(function () {
           timeoutFired = true;
@@ -93,6 +91,8 @@ export class P4 {
           child.kill();
         }, timeout);
       }
+
+      let child = spawn('p4', p4Cmd, this.options);
 
       child.on('error', err => {
         if (timeoutHandle !== null) {
