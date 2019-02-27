@@ -9,6 +9,10 @@ import {spawn, spawnSync} from 'child_process';
 
 import {shlex, convertOut, writeMarchal, createErrorType} from './helpers';
 
+Q.config({
+  cancellation: true
+});
+
 export const P4apiTimeoutError = createErrorType('P4apiTimeoutError', function (timeout, message) {
   this.timeout = timeout;
   this.message = 'Timeout ' + timeout + 'ms reached.';
@@ -55,8 +59,8 @@ export class P4 {
    * @param {string} command - The command to run
    * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
    */
-  async cmd(command, dataIn) {
-    return await new Q((resolve, reject) => {
+  cmd(command, dataIn) {
+    return new Q((resolve, reject, onCancel) => {
       let dataOut = Buffer.alloc(0);
 
       let dataErr = Buffer.alloc(0);
@@ -98,6 +102,10 @@ export class P4 {
       }
 
       let child = spawn('p4', p4Cmd, this.options);
+
+      onCancel(()=>{
+        child.kill();
+      });
 
       child.on('error', err => {
         if (timeoutHandle !== null) {

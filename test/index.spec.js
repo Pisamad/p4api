@@ -86,6 +86,35 @@ describe('p4api test', () => {
     });
   });
 
+  describe('Cancellation', () => {
+    before(async () => {
+      if (server.isActive()) {
+        await server.stop();
+      }
+      await server.create();
+      await server.start();
+
+    });
+    after(async () => {
+      if (server.isActive()) {
+        await server.stop();
+      }
+    });
+    beforeEach(() => {
+      p4Res = null;
+    });
+
+    describe('Cancel', () => {
+      let p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8'});
+
+      it('?', () => {
+        let promise = p4api.cmd('login', 'thePassword');
+
+        promise.cancel();
+      });
+    });
+  });
+
   describe('Connected commands', () => {
     let p4api;
 
