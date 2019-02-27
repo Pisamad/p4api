@@ -2,7 +2,7 @@
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import {P4} from '../lib/p4api';
+import {P4, P4apiTimeoutError} from '../lib/p4api';
 import {server} from './helper/server';
 import _ from 'lodash';
 
@@ -62,11 +62,11 @@ describe('p4api test', () => {
         let p4api = new P4({P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout});
 
         it('Async Timeout exception', (done) => {
-          p4api.cmd('login', 'thePassword').should.be.rejected.notify(done);
+          p4api.cmd('login', 'thePassword').should.be.rejectedWith(P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached').notify(done);
         });
 
         it('Sync Timeout exception', () => {
-          assert.throws(() => p4api.cmdSync('login', 'thePassword'));
+          assert.throws(() => p4api.cmdSync('login', 'thePassword'), P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached');
         });
       });
     });

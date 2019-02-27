@@ -23,7 +23,9 @@
     "url": "https://github.com/Pisamad/p4api/issues"
   },
   "dependencies": {
-    "bluebird": "^3.5.0",
+    "@babel/core": "^7.0.0",
+    "acorn": "^6.0.0",
+    "bluebird": "^3.5.3",
     "lodash": ">=4.17.11",
     "shelljs": "^0.8.2"
   },
@@ -38,12 +40,12 @@
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-stage-0": "^6.24.1",
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^4.13.1",
-    "eslint-loader": "^1.9.0",
-    "mocha": "^4.0.1",
+    "eslint": "^5.14.1",
+    "eslint-loader": "^2.1.2",
+    "mocha": "^6.0.2",
     "webpack": "^3.10.0",
-    "yargs": "^10.0.3"
+    "yargs": "^13.2.1"
   }
 }

@@ -17,7 +17,7 @@ To test it, you need to have installed "Helix Core Apps" and "Helix Versioning E
 
 ## Syntax
 ``` javascript
-import {P4} from "p4api";
+import {P4, P4apiTimeoutError} from "p4api";
 let p4 = new P4({P4PORT: "p4server:1666"});
 
 // Asynchro mode
@@ -55,15 +55,16 @@ P4 object is constructed with a structure containing:
 - p4api specific option like:
   * P4API_TIMEOUT: timeout in ms for cmd & cmdSync process
 
-When timeout is reached, cmd is rejected and cmdSync is throwed with:
-- ```P4APIError({name:'p4api error', msg:'Timeout <timeout>ms reached')``` 
+When timeout is reached, cmd is rejected and cmdSync is throwed 
+with a ```P4ApiTimeoutError``` ```Error``` instance 
+with message like ```'Timeout <timeout>ms reached')``` 
 
 
 
 ## Examples
 ### List of depots
 ``` javascript
-const P4 = require("p4api");
+import {P4} from "p4api";
 let p4 = new P4({P4PORT: "p4server:1666"});
     
 p4.cmd("depots").then(function(out){console.log(out);});
@@ -216,8 +217,9 @@ function p4Async(cmd, input) {
 }
 
 function p4Sync(cmd, input) {
+  let out;
   try {
-    let out = p4.cmdSync(cmd, input);
+    out = p4.cmdSync(cmd, input);
   } catch (err) {
     throw new Error("p4 not found");
   }
@@ -230,15 +232,15 @@ function p4Sync(cmd, input) {
 
 ### timeout handling
 ``` javascript
-const P4 = require("p4api");
+import {P4, P4apiTimeoutError} from "p4api";
 let p4 = new P4({P4PORT: "p4server:1666", P4API_TIMEOUT: 5000});
 
 p4.cmd(cmd, input)
 .then((out) => {
   return out;
 }, (err) => {
-  if (err.name === "p4api error") {
-    throw new Error("p4 timeout");
+  if (err instanceof P4apiTimeoutError) {
+    throw new Error("p4 timeout " + err.timeout + " ms");
   }
   throw new Error("p4 not found");
 });
@@ -247,11 +249,11 @@ p4.cmd(cmd, input)
 
 try {
   let out = p4.cmdSync(cmd, input);
+  return out
 } catch (err) {
-  if (err.name === "p4api error") {
-    throw new Error("p4 timeout");
+  if (err instanceof P4apiTimeoutError) {
+    throw new Error("p4 timeout " + err.timeout + " ms");
   }
   throw new Error("p4 not found");
 }
-return out;
 ```

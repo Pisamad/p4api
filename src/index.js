@@ -7,12 +7,12 @@ import Q from 'bluebird';
 import _ from 'lodash';
 import {spawn, spawnSync} from 'child_process';
 
-import {shlex, convertOut, writeMarchal} from './helpers';
+import {shlex, convertOut, writeMarchal, createErrorType} from './helpers';
 
-function P4APIError(msg) {
-  this.name = 'p4api error';
-  this.message = msg;
-}
+export const P4apiTimeoutError = createErrorType('P4apiTimeoutError', function (timeout, message) {
+  this.timeout = timeout;
+  this.message = 'Timeout ' + timeout + 'ms reached.';
+});
 
 export class P4 {
   constructor(p4set = {}) {
@@ -58,7 +58,9 @@ export class P4 {
   async cmd(command, dataIn) {
     return await new Q((resolve, reject) => {
       let dataOut = Buffer.alloc(0);
+
       let dataErr = Buffer.alloc(0);
+
       let globalOptions = ['-G'];
 
       this.options.cwd = this.cwd;
@@ -78,10 +80,13 @@ export class P4 {
       }
 
       let p4Cmd = globalOptions.concat(shlex(command));
+
       let result = {};
 
       let timeout = this.options.env.P4API_TIMEOUT;
+
       let timeoutHandle = null;
+
       let timeoutFired = false;
 
       if (timeout > 0) {
@@ -116,7 +121,7 @@ export class P4 {
 
       child.on('close', () => {
         if (timeoutFired) {
-          reject(new P4APIError('Timeout ' + timeout + 'ms reached'));
+          reject(new P4apiTimeoutError(timeout));
           return;
         }
 
@@ -150,6 +155,7 @@ export class P4 {
         if (command === 'set') {
           // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
           let p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
+
           let p4SetLength = p4Set.length;
 
           result.stat = [{}];
@@ -177,7 +183,9 @@ export class P4 {
    */
   cmdSync(command, dataIn) {
     let dataOut = Buffer.alloc(0);
+
     let dataErr = Buffer.alloc(0);
+
     let globalOptions = ['-G'];
 
     this.options.cwd = this.cwd;
@@ -216,7 +224,7 @@ export class P4 {
     let child = spawnSync('p4', p4Cmd, this.options);
 
     if (child.signal != null) {
-      throw new P4APIError('Timeout ' + this.options.timeout + 'ms reached');
+      throw new P4apiTimeoutError(this.options.timeout);
     }
     dataOut = convertOut(child.stdout);
     dataErr = child.stderr;
@@ -226,6 +234,7 @@ export class P4 {
     //  'value':{'code':'text' or 'binary', 'data':'...'},
     // 'prompt':'...'}
     let result = {};
+
     let dataOutLength = dataOut.length;
 
     for (let i = 0, len = dataOutLength; i < len; i++) {
@@ -251,6 +260,7 @@ export class P4 {
     if (command === 'set') {
       // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
       let p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
+
       let p4SetLength = p4Set.length;
 
       result.stat = [{}];
