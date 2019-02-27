@@ -7,7 +7,12 @@ import Q from 'bluebird';
 import _ from 'lodash';
 import {spawn, spawnSync} from 'child_process';
 
-import {shlex, convertOut, writeMarchal} from './helpers';
+import {shlex, convertOut, writeMarchal, createErrorType} from './helpers';
+
+export const P4apiTimeoutError = createErrorType('P4apiTimeoutError', function (timeout, message) {
+  this.timeout = timeout;
+  this.message = 'Timeout ' + timeout + 'ms reached.';
+});
 
 export class P4 {
   constructor(p4set = {}) {
@@ -53,7 +58,9 @@ export class P4 {
   async cmd(command, dataIn) {
     return await new Q((resolve, reject) => {
       let dataOut = Buffer.alloc(0);
+
       let dataErr = Buffer.alloc(0);
+
       let globalOptions = ['-G'];
 
       this.options.cwd = this.cwd;
@@ -73,75 +80,99 @@ export class P4 {
       }
 
       let p4Cmd = globalOptions.concat(shlex(command));
+
       let result = {};
 
-      try {
-        let child = spawn('p4', p4Cmd, this.options);
+      let timeout = this.options.env.P4API_TIMEOUT;
 
-        child.on('error', err => {
-          reject(err);
-        });
+      let timeoutHandle = null;
 
-        if (dataIn) {
-          writeMarchal(dataIn, child.stdin);
+      let timeoutFired = false;
+
+      if (timeout > 0) {
+        timeoutHandle = setTimeout(function () {
+          timeoutFired = true;
+          timeoutHandle = null;
+          child.kill();
+        }, timeout);
+      }
+
+      let child = spawn('p4', p4Cmd, this.options);
+
+      child.on('error', err => {
+        if (timeoutHandle !== null) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
+        reject(err);
+      });
+
+      if (dataIn) {
+        writeMarchal(dataIn, child.stdin);
+      }
+
+      child.stdout.on('data', data => {
+        dataOut = Buffer.concat([dataOut, data]);
+      });
+
+      child.stderr.on('data', data => {
+        dataErr = Buffer.concat([dataOut, data]);
+      });
+
+      child.on('close', () => {
+        if (timeoutFired) {
+          reject(new P4apiTimeoutError(timeout));
+          return;
         }
 
-        child.stdout.on('data', data => {
-          dataOut = Buffer.concat([dataOut, data]);
-        });
+        dataOut = convertOut(dataOut);
+        // Format the result  like an object :
+        // {'stat':[{},{},...], 'error':[{},{},...],
+        //  'value':{'code':'text' or 'binary', 'data':'...'},
+        // 'prompt':'...'}
+        let dataOutLength = dataOut.length;
 
-        child.stderr.on('data', data => {
-          dataErr = Buffer.concat([dataOut, data]);
-        });
+        for (let i = 0, len = dataOutLength; i < len; i++) {
+          let key = dataOut[i].code;
 
-        child.on('close', () => {
-          dataOut = convertOut(dataOut);
-          // Format the result  like an object :
-          // {'stat':[{},{},...], 'error':[{},{},...],
-          //  'value':{'code':'text' or 'binary', 'data':'...'},
-          // 'prompt':'...'}
-          let dataOutLength = dataOut.length;
-
-          for (let i = 0, len = dataOutLength; i < len; i++) {
-            let key = dataOut[i].code;
-
-            if ((key === 'text') || (key === 'binary')) {
-              result.data = result.data || '';
-              result.data += dataOut[i].data;
-            } else if (key === 'prompt') {
-              result[key] = dataOut[i].prompt;
-            } else {
-              result[key] = result[key] || [];
-              result[key].push(dataOut[i]);
-            }
+          if ((key === 'text') || (key === 'binary')) {
+            result.data = result.data || '';
+            result.data += dataOut[i].data;
+          } else if (key === 'prompt') {
+            result[key] = dataOut[i].prompt;
+          } else {
+            result[key] = result[key] || [];
+            result[key].push(dataOut[i]);
           }
-          // Is there stderr ==> error
-          if (dataErr.length > 0) {
-            result.error = result.error || [];
-            result.error.push({code: 'error', data: dataErr.toString(), severity: 3, generic: 4});
+        }
+        // Is there stderr ==> error
+        if (dataErr.length > 0) {
+          result.error = result.error || [];
+          result.error.push({code: 'error', data: dataErr.toString(), severity: 3, generic: 4});
+        }
+
+        // Special case for 'set' command
+        if (command === 'set') {
+          // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
+          let p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
+
+          let p4SetLength = p4Set.length;
+
+          result.stat = [{}];
+          for (let i = 0; i < p4SetLength; i++) {
+            let set = p4Set[i].match(/([^=]*)=(.*)/);
+
+            result.stat[0][set[1]] = set[2];
           }
+        }
 
-          // Special case for 'set' command
-          if (command === 'set') {
-            // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
-            let p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
-            let p4SetLength = p4Set.length;
-
-            result.stat = [{}];
-            for (let i = 0; i < p4SetLength; i++) {
-              let set = p4Set[i].match(/([^=]*)=(.*)/);
-
-              result.stat[0][set[1]] = set[2];
-            }
-          }
-
-          resolve(result);
-        });
-      } catch (e) {
-        reject(new Error(e));
-      } finally {
-      }
-    },
+        if (timeoutHandle !== null) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
+        resolve(result);
+      });
+    }
     );
   }
 
@@ -152,7 +183,9 @@ export class P4 {
    */
   cmdSync(command, dataIn) {
     let dataOut = Buffer.alloc(0);
+
     let dataErr = Buffer.alloc(0);
+
     let globalOptions = ['-G'];
 
     this.options.cwd = this.cwd;
@@ -168,8 +201,7 @@ export class P4 {
         },
         end: () => {
         }
-      },
-      );
+      });
     }
 
     // Force P4 env overriding env comming from P4CONFIG
@@ -183,59 +215,64 @@ export class P4 {
       globalOptions = globalOptions.concat(['-u', this.options.env.P4USER]);
     }
 
+    if (this.options.env.P4API_TIMEOUT > 0) {
+      this.options.timeout = this.options.env.P4API_TIMEOUT;
+    }
+
     let p4Cmd = globalOptions.concat(shlex(command));
 
-    try {
-      let child = spawnSync('p4', p4Cmd, this.options);
+    let child = spawnSync('p4', p4Cmd, this.options);
 
-      dataOut = convertOut(child.stdout);
-      dataErr = child.stderr;
-
-      // Format the result  like an object :
-      // {'stat':[{},{},...], 'error':[{},{},...],
-      //  'value':{'code':'text' or 'binary', 'data':'...'},
-      // 'prompt':'...'}
-      let result = {};
-      let dataOutLength = dataOut.length;
-
-      for (let i = 0, len = dataOutLength; i < len; i++) {
-        let key = dataOut[i].code;
-
-        if ((key === 'text') || (key === 'binary')) {
-          result.data = result.data || '';
-          result.data += dataOut[i].data;
-        } else if (key === 'prompt') {
-          result[key] = dataOut[i].prompt;
-        } else {
-          result[key] = result[key] || [];
-          result[key].push(dataOut[i]);
-        }
-      }
-      // Is there stderr ==> error
-      if (dataErr.length > 0) {
-        result.error = result.error || [];
-        result.error.push({code: 'error', data: dataErr.toString(), severity: 3, generic: 4});
-      }
-
-      // Special case for 'set' command
-      if (command === 'set') {
-        // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
-        let p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
-        let p4SetLength = p4Set.length;
-
-        result.stat = [{}];
-        for (let i = 0; i < p4SetLength; i++) {
-          let set = p4Set[i].match(/([^=]*)=(.*)/);
-
-          result.stat[0][set[1]] = set[2];
-        }
-      }
-
-      return result;
-
-    } catch (e) {
-      throw new Error(e);
+    if (child.signal != null) {
+      throw new P4apiTimeoutError(this.options.timeout);
     }
+    dataOut = convertOut(child.stdout);
+    dataErr = child.stderr;
+
+    // Format the result  like an object :
+    // {'stat':[{},{},...], 'error':[{},{},...],
+    //  'value':{'code':'text' or 'binary', 'data':'...'},
+    // 'prompt':'...'}
+    let result = {};
+
+    let dataOutLength = dataOut.length;
+
+    for (let i = 0, len = dataOutLength; i < len; i++) {
+      let key = dataOut[i].code;
+
+      if ((key === 'text') || (key === 'binary')) {
+        result.data = result.data || '';
+        result.data += dataOut[i].data;
+      } else if (key === 'prompt') {
+        result[key] = dataOut[i].prompt;
+      } else {
+        result[key] = result[key] || [];
+        result[key].push(dataOut[i]);
+      }
+    }
+    // Is there stderr ==> error
+    if (dataErr.length > 0) {
+      result.error = result.error || [];
+      result.error.push({code: 'error', data: dataErr.toString(), severity: 3, generic: 4});
+    }
+
+    // Special case for 'set' command
+    if (command === 'set') {
+      // Result is like : "rompt: "P4CHARSET=utf8 (set)\nP4CONFIG=.p4config (set) (config 'noconfig')\nP4EDITOR=C:..."
+      let p4Set = result.prompt.match(/P4.*=[^\s]*/g) || [];
+
+      let p4SetLength = p4Set.length;
+
+      result.stat = [{}];
+      for (let i = 0; i < p4SetLength; i++) {
+        let set = p4Set[i].match(/([^=]*)=(.*)/);
+
+        result.stat[0][set[1]] = set[2];
+      }
+    }
+
+    return result;
+
   };
 
   /**
@@ -251,11 +288,7 @@ export class P4 {
     let visualCmd = options.concat(shlex(cmd));
 
     return await new Q((resolve, reject) => {
-      try {
-        spawn('p4vc', visualCmd).on('close', resolve);
-      } catch (e) {
-        reject(new Error(e));
-      }
+      spawn('p4vc', visualCmd).on('close', resolve);
     });
   };
 

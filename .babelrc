@@ -1,5 +1,5 @@
 {
-  "compact": "true",
+  "compact": true,
   "presets": [
     "env"
   ],

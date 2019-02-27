@@ -13,11 +13,11 @@ $ npm install p4api --save
 ##Development
 Use build action (npm or yarn) to build lib/p4api.js.
 
-To test it, you need to have installed "Helixx Core Apps" and "Helix Versioning Engine" (p4 & p4d). 
+To test it, you need to have installed "Helix Core Apps" and "Helix Versioning Engine" (p4 & p4d). 
 
 ## Syntax
 ``` javascript
-import {P4} from "p4api";
+import {P4, P4apiTimeoutError} from "p4api";
 let p4 = new P4({P4PORT: "p4server:1666"});
 
 // Asynchro mode
@@ -35,7 +35,7 @@ try {
   throw ("p4 not found");
 }
 ```
-Where :
+Where:
 
 - `p4Cmd` is the Perforce command (string) with options separated with space.
 - `input` is a optional string for input value (like password for login command).
@@ -43,27 +43,34 @@ Where :
 `p4.cmd()` return a promise wich is resolved with the marchal result of the command as an object (`out`).
 `p4.cmdSync()` return the marchal result of the command as an object (`out`).
 
-`out` has the following structure :
+`out` has the following structure:
 
-- `prompt` : string printed by perforce before the result (else empty string)
-- `stat` : if exists, list of all result with code=stat
-- `info` : if exists, list of all result with code=info
-- `error` : if exists, list of all result with code=error
+- `prompt`: string printed by perforce before the result (else empty string)
+- `stat`: if exists, list of all result with code=stat
+- `info`: if exists, list of all result with code=info
+- `error`: if exists, list of all result with code=error
 
-P4 object constructor takes a structure of P4 environnment variables like P4PORT, P4CHARSET, P4USER, P4CLIENT, ... 
+P4 object is constructed with a structure containing:
+- all P4 environnment variables like P4PORT, P4CHARSET, P4USER, P4CLIENT, ...
+- p4api specific option like:
+  * P4API_TIMEOUT: timeout in ms for cmd & cmdSync process
+
+When timeout is reached, cmd is rejected and cmdSync is throwed 
+with a ```P4ApiTimeoutError``` ```Error``` instance 
+with message like ```'Timeout <timeout>ms reached')``` 
 
 
 
 ## Examples
 ### List of depots
 ``` javascript
-const P4 = require("p4api");
+import {P4} from "p4api";
 let p4 = new P4({P4PORT: "p4server:1666"});
     
 p4.cmd("depots").then(function(out){console.log(out);});
 ```
 
-Result is like :
+Result is like:
 ``` json
     {
       "prompt": "",
@@ -95,7 +102,7 @@ Result is like :
     ...
 ```
 
-Result is :
+Result is:
 ``` json
 {
   "prompt": "",
@@ -116,7 +123,7 @@ Result is :
     p4.cmd("login", "myGoodPasswd")
     ...
 ```
-Result is like :
+Result is like:
 ``` json
 {
   "prompt": "Enter password: ↵",
@@ -141,7 +148,7 @@ Result is like :
     p4.cmd("login -s")
     ...
 ```
-Result is like :
+Result is like:
 ``` json
 {
   "prompt": "",
@@ -210,8 +217,9 @@ function p4Async(cmd, input) {
 }
 
 function p4Sync(cmd, input) {
+  let out;
   try {
-    let out = p4.cmdSync(cmd, input);
+    out = p4.cmdSync(cmd, input);
   } catch (err) {
     throw new Error("p4 not found");
   }
@@ -220,5 +228,32 @@ function p4Sync(cmd, input) {
   }
   return out;
 }
+```
 
+### timeout handling
+``` javascript
+import {P4, P4apiTimeoutError} from "p4api";
+let p4 = new P4({P4PORT: "p4server:1666", P4API_TIMEOUT: 5000});
+
+p4.cmd(cmd, input)
+.then((out) => {
+  return out;
+}, (err) => {
+  if (err instanceof P4apiTimeoutError) {
+    throw new Error("p4 timeout " + err.timeout + " ms");
+  }
+  throw new Error("p4 not found");
+});
+
+
+
+try {
+  let out = p4.cmdSync(cmd, input);
+  return out
+} catch (err) {
+  if (err instanceof P4apiTimeoutError) {
+    throw new Error("p4 timeout " + err.timeout + " ms");
+  }
+  throw new Error("p4 not found");
+}
 ```

@@ -8,14 +8,19 @@ import _ from 'lodash';
  */
 export function shlex(str) {
   let args = _.compact(str.split(' '));
+
   let out = [];
+
   let lookForClose = -1;
+
   let quoteOpen = false;
 
   for (let x in args) {
     if (args.hasOwnProperty(x)) {
       let arg = args[x];
+
       let escSeq = false;
+
       let underQuote = false;
 
       for (let y in arg) {
@@ -35,7 +40,9 @@ export function shlex(str) {
         lookForClose = x;
       } else if (!quoteOpen && lookForClose >= 0) {
         let block = args.slice(lookForClose, parseInt(x) + 1).join(' ');
+
         let escSeq = false;
+
         let quotes = [];
 
         for (let y in block) {
@@ -68,11 +75,17 @@ export function shlex(str) {
  */
 export function convertOut(outString) {
   let buf = Buffer.isBuffer(outString) ? outString : Buffer.from(outString);
+
   let result = [];
+
   let index = 0;
+
   let i = 0;
+
   let key = '';
+
   let prompt = '';
+
   let bufLength = buf.length;
   // Look for the start of a valid answer
 
@@ -156,6 +169,7 @@ export function writeMarchal(inObject, stream) {
   } else {
     stream.write('{');
     let keyLen = Buffer.alloc(4);
+
     let valueLen = Buffer.alloc(4);
 
     for (let key in inObject) {
@@ -176,5 +190,38 @@ export function writeMarchal(inObject, stream) {
     stream.write('0');
   }
   stream.end();
+}
+
+/**
+ * Create a Error handler
+ * @param name (String) Error Name
+ * @param init (Function) Error handle
+ * @returns {E}
+ *
+ * Example :
+ * var NameError = createErrorType('NameError', function (name, invalidChar) {
+ *  this.message = 'The name ' + name + ' may not contain ' + invalidChar;
+ * });
+ *
+ * var UnboundError = createErrorType('UnboundError', function (variableName) {
+ *  this.message = 'Variable ' + variableName + ' is not bound';
+ * });
+ *
+ * Ref : https://stackoverflow.com/questions/1382107/whats-a-good-way-to-extend-error-in-javascript
+ */
+export function createErrorType(name, init) {
+  function E(message) {
+    if (!Error.captureStackTrace) {
+      this.stack = (new Error()).stack;
+    } else {
+      Error.captureStackTrace(this, this.constructor);
+    }
+    this.message = message;
+    init && init.apply(this, arguments);
+  }
+  E.prototype = new Error();
+  E.prototype.name = name;
+  E.prototype.constructor = E;
+  return E;
 }
 
