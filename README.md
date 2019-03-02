@@ -3,14 +3,14 @@ Perforce API using marchal syntax and promise.
 
 Allow p4 command in asynchro (promise) or synchro mode.
 
-##Installation
+## Installation
 Get the module from NPM
 
 ``` bash
 $ npm install p4api --save
 ```
 
-##Development
+## Development
 Use build action (npm or yarn) to build lib/p4api.js.
 
 To test it, you need to have installed "Helix Core Apps" and "Helix Versioning Engine" (p4 & p4d). 
