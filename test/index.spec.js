@@ -155,29 +155,52 @@ describe('p4api test', () => {
       });
     });
 
-    describe('Try object input injection with client command', () => {
+    describe('Sync - Try object input injection with client command', () => {
       it('Create a client from a description', async () => {
-        p4Res = await p4api.cmd('client -i', {
+        p4Res = p4api.cmdSync('client -i', {
           code: 'stat',
-          Client: 'myClient',
+          Client: 'myClientSync',
           Owner: 'bob',
           Host: '',
-          Description: 'Created by bob.\n',
+          Description: 'Created by bob.',
           Root: 'C:\\',
           Options: 'noallwrite noclobber nocompress unlocked nomodtime normdir',
           SubmitOptions: 'submitunchanged',
           LineEnd: 'local',
-          View0: '//team2/... //myClient/team2/...',
-          View1: '//team1/... //myClient/team1/...',
-          View2: '//depot/... //myClient/depot/...',
+          View0: '//team2/... //myClientSync/team2/...',
           Type: 'writeable',
           Backup: 'enable'
         });
-        // console.dir(p4Res)
+        //console.dir(p4Res)
         expect(p4Res).to.not.have.property('error');
         expect(p4Res).to.have.property('info').that.is.an('array');
         expect(p4Res.info[0]).to.have.any.keys('level', 'data');
-        expect(p4Res.info[0].data).to.equal('Client myClient saved.');
+        expect(p4Res.info[0].data).to.equal('Client myClientSync saved.');
+
+      });
+    });
+
+    describe('Async - Try object input injection with client command', async () => {
+      it('Create a client from a description', async () => {
+        p4Res = await p4api.cmd('client -i', {
+          code: 'stat',
+          Client: 'myClientAsync',
+          Owner: 'bob',
+          Host: '',
+          Description: 'Created by bob.',
+          Root: 'C:\\',
+          Options: 'noallwrite noclobber nocompress unlocked nomodtime normdir',
+          SubmitOptions: 'submitunchanged',
+          LineEnd: 'local',
+          View0: '//team2/... //myClientAsync/team2/...',
+          Type: 'writeable',
+          Backup: 'enable'
+        });
+        //console.dir(p4Res)
+        expect(p4Res).to.not.have.property('error');
+        expect(p4Res).to.have.property('info').that.is.an('array');
+        expect(p4Res.info[0]).to.have.any.keys('level', 'data');
+        expect(p4Res.info[0].data).to.equal('Client myClientAsync saved.');
 
       });
     });
