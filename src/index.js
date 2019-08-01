@@ -178,6 +178,7 @@ export class P4 {
           clearTimeout(timeoutHandle);
           timeoutHandle = null;
         }
+        // console.log('-P4 ', p4Cmd, result);
         resolve(result);
       });
     }
@@ -279,6 +280,7 @@ export class P4 {
       }
     }
 
+    // console.log('-P4 ', p4Cmd, result);
     return result;
 
   };
