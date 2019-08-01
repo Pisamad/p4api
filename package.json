@@ -1,13 +1,13 @@
 {
   "name": "p4api",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Simple Perforce API",
   "main": "lib/p4api.js",
   "scripts": {
     "build": "webpack --env dev && webpack --env build && npm run test",
     "dev": "webpack --progress --colors --watch --env dev",
-    "test": "mocha --timeout 10000 --require babel-core/register --colors ./test/*.spec.js",
-    "test:watch": "mocha --timeout 0 --require babel-core/register --colors -w ./test/*.spec.js"
+    "test": "mocha --timeout 10000 --require @babel/register --colors ./test/*.spec.js",
+    "test:watch": "mocha --timeout 0 --require @babel/register --colors -w ./test/*.spec.js"
   },
   "repository": {
     "type": "git",
@@ -23,29 +23,31 @@
     "url": "https://github.com/Pisamad/p4api/issues"
   },
   "dependencies": {
-    "@babel/core": "^7.0.0",
-    "acorn": "^6.0.0",
-    "bluebird": "^3.5.3",
-    "lodash": ">=4.17.11",
-    "shelljs": "^0.8.2"
+    "acorn": "^6.2.1",
+    "bluebird": "^3.5.5",
+    "lodash": "^4.17.15",
+    "shelljs": "^0.8.3"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.3",
-    "babel-eslint": "^8.0.3",
-    "babel-loader": "^7.1.4",
-    "babel-plugin-add-module-exports": "^0.2.1",
-    "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.6.1",
-    "babel-preset-stage-0": "^6.24.1",
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
+    "@babel/plugin-transform-runtime": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "@babel/register": "^7.5.5",
+    "@babel/runtime": "^7.5.5",
+    "babel-eslint": "^10.0.2",
+    "babel-loader": "^8.0.6",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^5.14.1",
-    "eslint-loader": "^2.1.2",
-    "mocha": "^6.0.2",
+    "eslint": "^6.1.0",
+    "eslint-loader": "^2.2.1",
+    "mocha": "^6.2.0",
     "webpack": "^3.10.0",
-    "yargs": "^13.2.1"
+    "yargs": "^13.3.0"
+  },
+  "bit": {
+    "env": {},
+    "componentsDefaultDirectory": "components/{name}",
+    "packageManager": "npm"
   }
 }
