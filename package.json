@@ -1,6 +1,6 @@
 {
   "name": "p4api",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "description": "Simple Perforce API",
   "main": "lib/p4api.js",
   "scripts": {

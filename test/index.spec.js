@@ -133,7 +133,7 @@ describe('p4api test', () => {
 
     after(async () => {
       if (server.isActive()) {
-        await server.stop();
+        // await server.stop();
       }
     });
 
@@ -224,6 +224,34 @@ describe('p4api test', () => {
         expect(p4Res).to.not.have.property('stat');
         expect(p4Res).to.have.property('error').that.is.an('array');
         expect(p4Res.error[0]).to.have.any.keys('data', 'severity', 'generic');
+      });
+    });
+
+    describe('Issue#5', () => {
+      const command = ['label -i', {
+        Label: 'team2_Label',
+        Owner: 'bob',
+        Description: '123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0',
+        View0: '//team2/...',
+        Revision: '@1'}];
+
+      it('Async : Doesnt failed when a field input has lenght = 128', async () => {
+        p4Res = await p4api.cmd(...command);
+        expect(p4Res).to.not.have.property('error');
+      });
+      it('Sync : Doesnt failed when a field input has lenght = 128',  async () => {
+        p4Res = p4api.cmdSync(...command);
+        expect(p4Res).to.not.have.property('error');
+      });
+      it('Async : Doesnt failed when a field input has lenght > 128', async () => {
+        command[1].Description +='XXX';
+        p4Res = await p4api.cmd(...command);
+        expect(p4Res).to.not.have.property('error');
+      });
+      it('Sync : Doesnt failed when a field input has lenght > 128', async () => {
+        command[1].Description +='XXX';
+        p4Res = p4api.cmdSync(...command);
+        expect(p4Res).to.not.have.property('error');
       });
     });
 

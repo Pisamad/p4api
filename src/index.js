@@ -178,7 +178,8 @@ export class P4 {
           clearTimeout(timeoutHandle);
           timeoutHandle = null;
         }
-        // console.log('-P4 ', p4Cmd, result);
+
+        // console.log('-P4 ', command, JSON.stringify(result));
         resolve(result);
       });
     }
@@ -201,12 +202,12 @@ export class P4 {
     this.options.env = this.options.env || {};
     this.options.env.PWD = this.cwd;
     this.options.stdio = ['pipe', 'pipe', 'pipe'];
-    this.options.input = '';
+    this.options.input = Buffer.from('');
 
     if (dataIn) {
       writeMarchal(dataIn, {
         write: s => {
-          this.options.input += s;
+          this.options.input = Buffer.concat([this.options.input, Buffer.from(s)]);
         },
         end: () => {
         }
@@ -280,7 +281,7 @@ export class P4 {
       }
     }
 
-    // console.log('-P4 ', p4Cmd, result);
+    // console.log('-P4 ', command, JSON.stringify(result));
     return result;
 
   };

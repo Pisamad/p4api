@@ -164,30 +164,33 @@ export function convertOut(outString) {
  * @returns {string} the result
  */
 export function writeMarchal(inObject, stream) {
-  let out = '';
-
   if (typeof inObject === 'string') {
-    out = inObject;
+    stream.write(Buffer.from(inObject));
   } else {
-    out += '{';
-    let keyLen = Buffer.alloc(4);
-
-    let valueLen = Buffer.alloc(4);
+    stream.write(Buffer.from('{'));
 
     for (let key in inObject) {
       if (inObject.hasOwnProperty(key)) {
         let value = String(inObject[key]);
 
+        let keyLen = Buffer.alloc(4);
+
+        let valueLen = Buffer.alloc(4);
+
         keyLen.writeUInt32LE(key.length, 0);
         valueLen.writeUInt32LE(value.length, 0);
-        out += `s${keyLen}${key}s${valueLen}${value}`;
+        stream.write(Buffer.from('s'));
+        stream.write(keyLen);
+        stream.write(Buffer.from(key));
+        stream.write(Buffer.from('s'));
+        stream.write(valueLen);
+        stream.write(Buffer.from(value));
+        // console.log(keyLen, key.length, key, valueLen, value.length, value);
       }
     }
 
-    out += '0';
+    stream.write(Buffer.from('0'));
   }
-  // console.log(Buffer.from(out));
-  stream.write(out);
   stream.end();
 }
 
