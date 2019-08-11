@@ -44,10 +44,5 @@
     "mocha": "^6.2.0",
     "webpack": "^3.10.0",
     "yargs": "^13.3.0"
-  },
-  "bit": {
-    "env": {},
-    "componentsDefaultDirectory": "components/{name}",
-    "packageManager": "npm"
   }
 }
