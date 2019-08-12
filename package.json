@@ -40,7 +40,12 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint": "^6.1.0",
+    "eslint-config-standard": "^13.0.1",
     "eslint-loader": "^2.2.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^9.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.0",
     "mocha": "^6.2.0",
     "webpack": "^3.10.0",
     "yargs": "^13.3.0"
