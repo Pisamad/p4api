@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import _ from 'lodash'
 
 /**
  * A function for parsing shell-like quoted arguments into an array,
@@ -6,66 +6,59 @@ import _ from 'lodash';
  * and parses them out for you. Returns false on failure (from unbalanced quotes).
  * @param {string} str
  */
-export function shlex(str) {
-  let args = _.compact(str.split(' '));
+export function shlex (str) {
+  const args = _.compact(str.split(' '))
+  const out = []
+  let lookForClose = -1
+  let quoteOpen = false
 
-  let out = [];
+  for (const x in args) {
+    let arg = args[x]
+    let escSeq = false
+    let underQuote = false
 
-  let lookForClose = -1;
-
-  let quoteOpen = false;
-
-  for (let x in args) {
-    if (args.hasOwnProperty(x)) {
-      let arg = args[x];
-
-      let escSeq = false;
-
-      let underQuote = false;
-
-      for (let y in arg) {
-        if (escSeq) {
-          escSeq = false;
-        } else if (arg[y] === '\\') {
-          escSeq = true;
-        } else if (arg[y] === '"') {
-          quoteOpen = !quoteOpen;
-          underQuote = true;
-        }
-      }
-      if (!quoteOpen && lookForClose === -1) {
-        if (underQuote) arg = arg.slice(1, -1);
-        out.push(arg);
-      } else if (quoteOpen && lookForClose === -1) {
-        lookForClose = x;
-      } else if (!quoteOpen && lookForClose >= 0) {
-        let block = args.slice(lookForClose, parseInt(x) + 1).join(' ');
-
-        let escSeq = false;
-
-        let quotes = [];
-
-        for (let y in block) {
-          if (escSeq) {
-            escSeq = false;
-          } else if (block[y] === '\\') {
-            escSeq = true;
-          } else if (block[y] === '"') {
-            quotes.push(y);
-          }
-        }
-        let parts = [];
-
-        parts.push(block.substr(0, quotes[0]));
-        parts.push(block.substr(parseInt(quotes[0]) + 1, quotes[1] - (parseInt(quotes[0]) + 1)));
-        parts.push(block.substr(parseInt(quotes[1]) + 1));
-        block = parts.join('');
-        out.push(block);
-        lookForClose = -1;
+    for (const y in arg) {
+      if (escSeq) {
+        escSeq = false
+      } else if (arg[y] === '\\') {
+        escSeq = true
+      } else if (arg[y] === '"') {
+        quoteOpen = !quoteOpen
+        underQuote = true
       }
     }
+    if (!quoteOpen && lookForClose === -1) {
+      if (underQuote) arg = arg.slice(1, -1)
+      out.push(arg)
+    } else if (quoteOpen && lookForClose === -1) {
+      lookForClose = x
+    } else if (!quoteOpen && lookForClose >= 0) {
+      let block = args.slice(lookForClose, parseInt(x) + 1).join(' ')
+
+      let escSeq = false
+
+      const quotes = []
+
+      for (const y in block) {
+        if (escSeq) {
+          escSeq = false
+        } else if (block[y] === '\\') {
+          escSeq = true
+        } else if (block[y] === '"') {
+          quotes.push(y)
+        }
+      }
+      const parts = []
+
+      parts.push(block.substr(0, quotes[0]))
+      parts.push(block.substr(parseInt(quotes[0]) + 1, quotes[1] - (parseInt(quotes[0]) + 1)))
+      parts.push(block.substr(parseInt(quotes[1]) + 1))
+      block = parts.join('')
+      out.push(block)
+      lookForClose = -1
+    }
   }
-  return quoteOpen ? false : out;
+  return quoteOpen ? false : out
 }
 
 /**
@@ -73,88 +66,82 @@ export function shlex(str) {
  * @param {string} outString - The output from P4 (String or Buffer)
  * @returns {object} the result
  */
-export function convertOut(outString) {
-  let buf = Buffer.isBuffer(outString) ? outString : Buffer.from(outString);
+export function convertOut (outString) {
+  const buf = Buffer.isBuffer(outString) ? outString : Buffer.from(outString)
+  const result = []
+  let index = 0
+  let i = 0
+  let key = ''
+  let prompt = ''
+  const bufLength = buf.length
 
-  let result = [];
-
-  let index = 0;
-
-  let i = 0;
-
-  let key = '';
-
-  let prompt = '';
-
-  let bufLength = buf.length;
   // Look for the start of a valid answer
-
   while (i < bufLength) {
-    let elt = buf.toString('ascii', i, i + 1);
+    const elt = buf.toString('ascii', i, i + 1)
 
-    if (elt === '{') break;
-    prompt += elt;
-    i++;
+    if (elt === '{') break
+    prompt += elt
+    i++
   }
-  result[index] = {code: 'prompt', prompt: prompt};
+  result[index] = { code: 'prompt', prompt: prompt }
 
   // Parse answer
   while (i < bufLength) {
-    let elt = buf.toString('ascii', i, i + 1);
+    const elt = buf.toString('ascii', i, i + 1)
 
     switch (elt) {
       case '{':
         // Start of a new element
-        index++;
-        result[index] = {};
-        i++;
-        key = '';
-        break;
+        index++
+        result[index] = {}
+        i++
+        key = ''
+        break
       case 's':
         // A text
-        i++;
-        let lg = buf.readUInt32LE(i);
+        i++
+        const lg = buf.readUInt32LE(i)
 
-        i += 4;
-        let str = buf.toString('ascii', i, i + lg);
+        i += 4
+        const str = buf.toString('ascii', i, i + lg)
 
-        i += lg;
+        i += lg
         if (key === '') {
           // Text is a key
-          key = str;
+          key = str
         } else {
           // Text is the value of last key
-          result[index][key] = str;
-          key = '';
+          result[index][key] = str
+          key = ''
         }
-        break;
+        break
       case 'i':
         // A integer
-        i++;
-        let val = buf.readUInt32LE(i);
+        i++
+        const val = buf.readUInt32LE(i)
 
-        i += 4;
+        i += 4
         if (key === '') {
           // Text is a key
           // !!! Syntax error
-          console.error('Syntax error');
+          console.error('Syntax error')
         } else {
           // Text is the value of last key
-          result[index][key] = val;
-          key = '';
+          result[index][key] = val
+          key = ''
         }
-        break;
+        break
       case '0':
         // End of the element
-        i++;
-        break;
+        i++
+        break
       default:
         // Syntax error, we return the original string
-        console.error('Syntax error or result is a string');
-        return outString;
+        console.error('Syntax error or result is a string')
+        return outString
     }
   }
-  return result;
+  return result
 }
 
 /**
@@ -163,35 +150,31 @@ export function convertOut(outString) {
  * @param {stream} stream - A writable stream where result will be sent
  * @returns {string} the result
  */
-export function writeMarchal(inObject, stream) {
+export function writeMarchal (inObject, stream) {
   if (typeof inObject === 'string') {
-    stream.write(Buffer.from(inObject));
+    stream.write(Buffer.from(inObject))
   } else {
-    stream.write(Buffer.from('{'));
+    stream.write(Buffer.from('{'))
 
-    for (let key in inObject) {
-      if (inObject.hasOwnProperty(key)) {
-        let value = String(inObject[key]);
+    for (const key in inObject) {
+      const value = String(inObject[key])
+      const keyLen = Buffer.alloc(4)
+      const valueLen = Buffer.alloc(4)
 
-        let keyLen = Buffer.alloc(4);
-
-        let valueLen = Buffer.alloc(4);
-
-        keyLen.writeUInt32LE(key.length, 0);
-        valueLen.writeUInt32LE(value.length, 0);
-        stream.write(Buffer.from('s'));
-        stream.write(keyLen);
-        stream.write(Buffer.from(key));
-        stream.write(Buffer.from('s'));
-        stream.write(valueLen);
-        stream.write(Buffer.from(value));
-        // console.log(keyLen, key.length, key, valueLen, value.length, value);
-      }
+      keyLen.writeUInt32LE(key.length, 0)
+      valueLen.writeUInt32LE(value.length, 0)
+      stream.write(Buffer.from('s'))
+      stream.write(keyLen)
+      stream.write(Buffer.from(key))
+      stream.write(Buffer.from('s'))
+      stream.write(valueLen)
+      stream.write(Buffer.from(value))
+      // console.log(keyLen, key.length, key, valueLen, value.length, value);
     }
 
-    stream.write(Buffer.from('0'));
+    stream.write(Buffer.from('0'))
   }
-  stream.end();
+  stream.end()
 }
 
 /**
@@ -211,19 +194,19 @@ export function writeMarchal(inObject, stream) {
  *
  * Ref : https://stackoverflow.com/questions/1382107/whats-a-good-way-to-extend-error-in-javascript
  */
-export function createErrorType(name, init) {
-  function E(message) {
+export function createErrorType (name, init) {
+  function E (message) {
     if (!Error.captureStackTrace) {
-      this.stack = (new Error()).stack;
+      this.stack = (new Error()).stack
     } else {
-      Error.captureStackTrace(this, this.constructor);
+      Error.captureStackTrace(this, this.constructor)
     }
-    this.message = message;
-    init && init.apply(this, arguments);
+    this.message = message
+    init && init.apply(this, arguments)
   }
-  E.prototype = new Error();
-  E.prototype.name = name;
-  E.prototype.constructor = E;
-  return E;
-}
 
+  E.prototype = new Error()
+  E.prototype.name = name
+  E.prototype.constructor = E
+  return E
+}
