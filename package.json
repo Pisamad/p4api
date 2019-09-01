@@ -3,6 +3,9 @@
   "version": "3.2.3",
   "description": "Simple Perforce API",
   "main": "lib/p4api.js",
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "build": "webpack --env dev && webpack --env build && npm run test",
     "dev": "webpack --progress --colors --watch --env dev",
