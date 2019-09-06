@@ -59,8 +59,7 @@ export class P4 {
   }
 
   _setGlobalOptions () {
-    this.globalOptions = ['-G']
-
+    this.globalOptions = []
     // Force P4 env overriding env comming from P4CONFIG
     if (this.options.env.P4CLIENT) {
       this.globalOptions = this.globalOptions.concat(['-c', this.options.env.P4CLIENT])
@@ -73,7 +72,7 @@ export class P4 {
     }
   }
 
-  _formatResuslt (command, dataOut, dataErr) {
+  static _formatResuslt (command, dataOut, dataErr) {
     // Format the result  like an object :
     // {'stat':[{},{},...], 'error':[{},{},...],
     //  'value':{'code':'text' or 'binary', 'data':'...'},
@@ -126,7 +125,7 @@ export class P4 {
       let dataOut = Buffer.alloc(0)
       let dataErr = Buffer.alloc(0)
 
-      const p4Cmd = this.globalOptions.concat(shlex(command))
+      const p4Cmd = ['-G'].concat(this.globalOptions, shlex(command))
       const timeout = this.options.env.P4API_TIMEOUT
       let timeoutHandle = null
       let timeoutFired = false
@@ -177,7 +176,7 @@ export class P4 {
         }
 
         dataOut = convertOut(dataOut)
-        const result = this._formatResuslt(command, dataOut, dataErr)
+        const result = P4._formatResuslt(command, dataOut, dataErr)
         // console.log('-P4 ', command, JSON.stringify(result));
         resolve(result)
       })
@@ -209,7 +208,7 @@ export class P4 {
       this.options.timeout = this.options.env.P4API_TIMEOUT
     }
 
-    const p4Cmd = this.globalOptions.concat(shlex(command))
+    const p4Cmd = ['-G'].concat(this.globalOptions, shlex(command))
     const child = spawnSync('p4', p4Cmd, this.options)
 
     if (child.signal != null) {
@@ -218,7 +217,114 @@ export class P4 {
 
     dataOut = convertOut(child.stdout)
     dataErr = child.stderr
-    const result = this._formatResuslt(command, dataOut, dataErr)
+    const result = P4._formatResuslt(command, dataOut, dataErr)
+    // console.log('-P4 ', command, JSON.stringify(result));
+    return result
+  };
+
+  /**
+   * Run a command.
+   * @param {string} command - The command to run
+   * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
+   */
+  rawCmd (command, dataIn) {
+    return new Q((resolve, reject, onCancel) => {
+      let dataOut = Buffer.alloc(0)
+      let dataErr = Buffer.alloc(0)
+
+      const p4Cmd = [].concat(this.globalOptions, shlex(command))
+      const timeout = this.options.env.P4API_TIMEOUT
+      let timeoutHandle = null
+      let timeoutFired = false
+
+      if (timeout > 0) {
+        timeoutHandle = setTimeout(function () {
+          timeoutFired = true
+          timeoutHandle = null
+          child.kill()
+        }, timeout)
+      }
+
+      const child = spawn('p4', p4Cmd, this.options)
+
+      onCancel(() => {
+        child.kill()
+      })
+
+      child.on('error', err => {
+        if (timeoutHandle !== null) {
+          clearTimeout(timeoutHandle)
+          timeoutHandle = null
+        }
+        reject(err)
+      })
+
+      if (dataIn) {
+        child.stdin.write(dataIn)
+        child.stdin.end()
+      }
+
+      child.stdout.on('data', data => {
+        dataOut = Buffer.concat([dataOut, data])
+      })
+
+      child.stderr.on('data', data => {
+        dataErr = Buffer.concat([dataOut, data])
+      })
+
+      child.on('close', () => {
+        if (timeoutFired) {
+          reject(new P4apiTimeoutError(timeout))
+          return
+        }
+
+        if (timeoutHandle !== null) {
+          clearTimeout(timeoutHandle)
+          timeoutHandle = null
+        }
+
+        const result = {
+          dataOut: dataOut.toString(),
+          dataErr: dataErr.toString()
+        }
+        // console.log('-P4 ', command, JSON.stringify(result));
+        resolve(result)
+      })
+    }
+    )
+  }
+
+  /**
+   * Synchronously Run a command .
+   * @param {string} command - The command to run
+   * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
+   */
+  rawCmdSync (command, dataIn) {
+    let dataOut = Buffer.alloc(0)
+    let dataErr = Buffer.alloc(0)
+
+    this.options.input = Buffer.alloc(0)
+    if (dataIn) {
+      this.options.input = Buffer.from(dataIn)
+    }
+
+    if (this.options.env.P4API_TIMEOUT > 0) {
+      this.options.timeout = this.options.env.P4API_TIMEOUT
+    }
+
+    const p4Cmd = [].concat(this.globalOptions, shlex(command))
+    const child = spawnSync('p4', p4Cmd, this.options)
+
+    if (child.signal != null) {
+      throw new P4apiTimeoutError(this.options.timeout)
+    }
+
+    dataOut = child.stdout
+    dataErr = child.stderr
+    const result = {
+      dataOut: dataOut.toString(),
+      dataErr: dataErr.toString()
+    }
     // console.log('-P4 ', command, JSON.stringify(result));
     return result
   };

@@ -1,159 +1,156 @@
 /* global describe, it, before */
 
-import chai from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import {P4, P4apiTimeoutError} from '../lib/p4api';
-import {server} from './helper/server';
-import _ from 'lodash';
+import chai from 'chai'
+import chaiAsPromised from 'chai-as-promised'
+import { P4, P4apiTimeoutError } from '../lib/p4api'
+import { server } from './helper/server'
+import _ from 'lodash'
 
-chai.use(chaiAsPromised);
+chai.use(chaiAsPromised)
 
-const expect = chai.expect;
-const assert = chai.assert;
+const expect = chai.expect
+const assert = chai.assert
 
-chai.should();
+chai.should()
 
-server.silent = true; // Server action is not verbose
+server.silent = true // Server action is not verbose
 
-let p4Res;
+let p4Res
 
-console.clear();
+console.clear()
 describe('p4api test', () => {
   describe('No connected commands', () => {
     before(() => {
-    });
+    })
     beforeEach(() => {
-      p4Res = null;
-    });
+      p4Res = null
+    })
     describe('P4 set', () => {
-      let p4api = new P4();
+      const p4api = new P4()
 
       it('return a set of P4 env var', async () => {
-        p4Res = await p4api.cmd('set');
-        expect(p4Res).to.have.property('stat').that.is.an('array');
+        p4Res = await p4api.cmd('set')
+        expect(p4Res).to.have.property('stat').that.is.an('array')
         expect(_.chain(p4Res.stat[0])
           .filter((v, k) => (!k.startsWith('P4')))
-          .value()).to.be.empty;
+          .value()).to.be.empty
         // expect(p4Res.stat).to.have.property('P4PORT');
-      });
-    });
-  });
+      })
+    })
+  })
 
   describe('Server down', () => {
     before(async () => {
       if (server.isActive()) {
-        await server.stop();
+        await server.stop()
       }
-      await server.create();
-      await server.start();
-
-    });
+      await server.create()
+      await server.start()
+    })
     after(async () => {
       if (server.isActive()) {
-        await server.stop();
+        await server.stop()
       }
-    });
+    })
     beforeEach(() => {
-      p4Res = null;
+      p4Res = null
     });
 
     [1000, 2000].forEach(timeout => {
       describe('P4 login to muted server with timeout=' + timeout, () => {
-        let p4api = new P4({P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout});
+        const p4api = new P4({ P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout })
 
         it('Async Timeout exception', (done) => {
-          p4api.cmd('login', 'thePassword').should.be.rejectedWith(P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached').notify(done);
-        });
+          p4api.cmd('login', 'thePassword').should.be.rejectedWith(P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached').notify(done)
+        })
 
         it('Sync Timeout exception', () => {
-          assert.throws(() => p4api.cmdSync('login', 'thePassword'), P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached');
-        });
-      });
+          assert.throws(() => p4api.cmdSync('login', 'thePassword'), P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached')
+        })
+      })
     });
     [1000, 2000].forEach(timeout => {
       describe('P4 login to unmuted server with timeout=' + timeout, () => {
-        let p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout});
+        const p4api = new P4({ P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout })
 
         it('Sync Timeout ' + timeout + ' not reached', () => {
-          assert.doesNotThrow(() => p4api.cmdSync('login', 'thePassword'));
-        });
+          assert.doesNotThrow(() => p4api.cmdSync('login', 'thePassword'))
+        })
 
         it('Async Timeout ' + timeout + ' not reached', (done) => {
-          p4api.cmd('login', 'thePassword').should.be.fulfilled.notify(done);
-        });
-
-      });
-    });
-  });
+          p4api.cmd('login', 'thePassword').should.be.fulfilled.notify(done)
+        })
+      })
+    })
+  })
 
   describe('Cancellation', () => {
     before(async () => {
       if (server.isActive()) {
-        await server.stop();
+        await server.stop()
       }
-      await server.create();
-      await server.start();
-
-    });
+      await server.create()
+      await server.start()
+    })
     after(async () => {
       if (server.isActive()) {
-        await server.stop();
+        await server.stop()
       }
-    });
+    })
     beforeEach(() => {
-      p4Res = null;
-    });
+      p4Res = null
+    })
 
     describe('Cancel', () => {
-      let p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8'});
+      const p4api = new P4({ P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8' })
 
       it('?', () => {
-        let promise = p4api.cmd('login', 'thePassword');
+        const promise = p4api.cmd('login', 'thePassword')
 
-        promise.cancel();
-      });
-    });
-  });
+        promise.cancel()
+      })
+    })
+  })
 
   describe('Connected commands', () => {
-    let p4api;
+    let p4api
 
     before(async () => {
       if (server.isActive()) {
-        await server.stop();
+        await server.stop()
       }
-      await server.create();
-      await server.start();
+      await server.create()
+      await server.start()
 
-      p4api = new P4({P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 5000});
-    });
+      p4api = new P4({ P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 5000 })
+    })
     beforeEach(() => {
-      p4Res = null;
-    });
+      p4Res = null
+    })
 
     after(async () => {
       if (server.isActive()) {
         // await server.stop();
       }
-    });
+    })
 
     describe('Try text input injection with login command', () => {
       it('Login with bad pwd return Error', async () => {
-        p4Res = await p4api.cmd('login', 'badPassword');
+        p4Res = await p4api.cmd('login', 'badPassword')
         // console.dir(p4Res);
-        expect(p4Res).to.have.property('error').that.is.an('array');
-        expect(p4Res).to.not.have.property('stat');
-        expect(p4Res.error[0]).to.have.any.keys('data', 'severity', 'generic');
-        expect(p4Res.error[0].data).to.equal('Password invalid.\n');
-      });
+        expect(p4Res).to.have.property('error').that.is.an('array')
+        expect(p4Res).to.not.have.property('stat')
+        expect(p4Res.error[0]).to.have.any.keys('data', 'severity', 'generic')
+        expect(p4Res.error[0].data).to.equal('Password invalid.\n')
+      })
       it('Login with good pwd return User & Expiration', async () => {
-        p4Res = await p4api.cmd('login', 'thePassword');
-        expect(p4Res).to.not.have.property('error');
-        expect(p4Res).to.have.property('stat').that.is.an('array');
-        expect(p4Res.stat[0]).to.have.any.keys('User', 'Expiration');
-        expect(p4Res.stat[0].User).to.equal('bob');
-      });
-    });
+        p4Res = await p4api.cmd('login', 'thePassword')
+        expect(p4Res).to.not.have.property('error')
+        expect(p4Res).to.have.property('stat').that.is.an('array')
+        expect(p4Res.stat[0]).to.have.any.keys('User', 'Expiration')
+        expect(p4Res.stat[0].User).to.equal('bob')
+      })
+    })
 
     describe('Sync - Try object input injection with client command', () => {
       it('Create a client from a description', async () => {
@@ -170,15 +167,14 @@ describe('p4api test', () => {
           View0: '//team2/... //myClientSync/team2/...',
           Type: 'writeable',
           Backup: 'enable'
-        });
-        //console.dir(p4Res)
-        expect(p4Res).to.not.have.property('error');
-        expect(p4Res).to.have.property('info').that.is.an('array');
-        expect(p4Res.info[0]).to.have.any.keys('level', 'data');
-        expect(p4Res.info[0].data).to.equal('Client myClientSync saved.');
-
-      });
-    });
+        })
+        // console.dir(p4Res)
+        expect(p4Res).to.not.have.property('error')
+        expect(p4Res).to.have.property('info').that.is.an('array')
+        expect(p4Res.info[0]).to.have.any.keys('level', 'data')
+        expect(p4Res.info[0].data).to.equal('Client myClientSync saved.')
+      })
+    })
 
     describe('Async - Try object input injection with client command', async () => {
       it('Create a client from a description', async () => {
@@ -195,37 +191,36 @@ describe('p4api test', () => {
           View0: '//team2/... //myClientAsync/team2/...',
           Type: 'writeable',
           Backup: 'enable'
-        });
-        //console.dir(p4Res)
-        expect(p4Res).to.not.have.property('error');
-        expect(p4Res).to.have.property('info').that.is.an('array');
-        expect(p4Res.info[0]).to.have.any.keys('level', 'data');
-        expect(p4Res.info[0].data).to.equal('Client myClientAsync saved.');
-
-      });
-    });
+        })
+        // console.dir(p4Res)
+        expect(p4Res).to.not.have.property('error')
+        expect(p4Res).to.have.property('info').that.is.an('array')
+        expect(p4Res.info[0]).to.have.any.keys('level', 'data')
+        expect(p4Res.info[0].data).to.equal('Client myClientAsync saved.')
+      })
+    })
 
     describe('Try P4 result', () => {
       it('P4 depots return the list of depots in stat', async () => {
-        p4Res = await p4api.cmd('depots');
-        expect(p4Res).to.not.have.property('error');
-        expect(p4Res).to.have.property('stat').that.is.an('array');
+        p4Res = await p4api.cmd('depots')
+        expect(p4Res).to.not.have.property('error')
+        expect(p4Res).to.have.property('stat').that.is.an('array')
         expect(_.chain(p4Res.stat)
           .map('name')
           .difference(server.Depots)
           .difference(['depot', 'dummy'])
-          .value()).to.be.empty;
-      });
-    });
+          .value()).to.be.empty
+      })
+    })
 
     describe('Try error handle', () => {
       it('Bad command return an error', async () => {
-        p4Res = await p4api.cmd('bad command');
-        expect(p4Res).to.not.have.property('stat');
-        expect(p4Res).to.have.property('error').that.is.an('array');
-        expect(p4Res.error[0]).to.have.any.keys('data', 'severity', 'generic');
-      });
-    });
+        p4Res = await p4api.cmd('bad command')
+        expect(p4Res).to.not.have.property('stat')
+        expect(p4Res).to.have.property('error').that.is.an('array')
+        expect(p4Res.error[0]).to.have.any.keys('data', 'severity', 'generic')
+      })
+    })
 
     describe('Issue#5', () => {
       const command = ['label -i', {
@@ -233,27 +228,150 @@ describe('p4api test', () => {
         Owner: 'bob',
         Description: '123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0',
         View0: '//team2/...',
-        Revision: '@1'}];
+        Revision: '@1' }]
 
       it('Async : Doesnt failed when a field input has lenght = 128', async () => {
-        p4Res = await p4api.cmd(...command);
-        expect(p4Res).to.not.have.property('error');
-      });
-      it('Sync : Doesnt failed when a field input has lenght = 128',  async () => {
-        p4Res = p4api.cmdSync(...command);
-        expect(p4Res).to.not.have.property('error');
-      });
+        p4Res = await p4api.cmd(...command)
+        expect(p4Res).to.not.have.property('error')
+      })
+      it('Sync : Doesnt failed when a field input has lenght = 128', async () => {
+        p4Res = p4api.cmdSync(...command)
+        expect(p4Res).to.not.have.property('error')
+      })
       it('Async : Doesnt failed when a field input has lenght > 128', async () => {
-        command[1].Description +='XXX';
-        p4Res = await p4api.cmd(...command);
-        expect(p4Res).to.not.have.property('error');
-      });
+        command[1].Description += 'XXX'
+        p4Res = await p4api.cmd(...command)
+        expect(p4Res).to.not.have.property('error')
+      })
       it('Sync : Doesnt failed when a field input has lenght > 128', async () => {
-        command[1].Description +='XXX';
-        p4Res = p4api.cmdSync(...command);
-        expect(p4Res).to.not.have.property('error');
-      });
-    });
+        command[1].Description += 'XXX'
+        p4Res = p4api.cmdSync(...command)
+        expect(p4Res).to.not.have.property('error')
+      })
+    })
+  })
 
-  });
-});
+  describe('Connected RAW commands', () => {
+    let p4api
+
+    before(async () => {
+      if (server.isActive()) {
+        await server.stop()
+      }
+      await server.create()
+      await server.start()
+
+      p4api = new P4({ P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 5000 })
+    })
+    beforeEach(() => {
+      p4Res = null
+    })
+
+    after(async () => {
+      if (server.isActive()) {
+        // await server.stop();
+      }
+    })
+
+    describe('Try text input injection with login command', () => {
+      it('Login with bad pwd return Error', async () => {
+        p4Res = await p4api.rawCmd('login', 'badPassword')
+        // console.dir(p4Res);
+        expect(p4Res).to.have.property('dataOut').to.include('Enter password')
+        expect(p4Res).to.have.property('dataErr').to.include('Password invalid')
+      })
+      it('Login with good pwd return User & Expiration', async () => {
+        p4Res = await p4api.rawCmd('login', 'thePassword')
+        expect(p4Res).to.have.property('dataOut').to.include('Enter password')
+        expect(p4Res).to.have.property('dataErr').to.equal('')
+        // expect(p4Res).to.have.property('stat').that.is.an('array')
+        // expect(p4Res.stat[0]).to.have.any.keys('User', 'Expiration')
+        // expect(p4Res.stat[0].User).to.equal('bob')
+      })
+    })
+
+    describe('Sync - Try object input injection with client command', () => {
+      it('Create a client from a description', async () => {
+        p4Res = p4api.rawCmdSync('client -i', `
+Client: myClientSync
+
+Owner: bob
+
+Host:
+ 
+Description: 
+  Created by bob.
+  
+Root: C:\\
+
+Options: noallwrite noclobber nocompress unlocked nomodtime normdir
+
+SubmitOptions: submitunchanged
+
+LineEnd: local
+
+View: 
+  //team2/... //myClientSync/team2/...
+  
+Type: writeable
+
+Backup: enable
+
+`)
+        // console.dir(p4Res)
+        expect(p4Res).to.have.property('dataOut').to.include('Client myClientSync saved.')
+        expect(p4Res).to.have.property('dataErr').to.equal('')
+      })
+    })
+
+    describe('Async - Try object input injection with client command', async () => {
+      it('Create a client from a description', async () => {
+        p4Res = await p4api.rawCmd('client -i', `
+Client: myClientSync
+
+Owner: bob
+
+Host:
+ 
+Description: 
+  Created by bob.
+  
+Root: C:\\
+
+Options: noallwrite noclobber nocompress unlocked nomodtime normdir
+
+SubmitOptions: submitunchanged
+
+LineEnd: local
+
+View: 
+  //team2/... //myClientSync/team2/...
+  
+Type: writeable
+
+Backup: enable
+
+`)
+        // console.dir(p4Res)
+        expect(p4Res).to.have.property('dataOut').to.include('Client myClientSync not changed.')
+        expect(p4Res).to.have.property('dataErr').to.equal('')
+      })
+    })
+
+    describe('Try P4 result', () => {
+      it('P4 depots return the list of depots in stat', async () => {
+        p4Res = await p4api.rawCmd('depots')
+        expect(p4Res).to.have.property('dataOut')
+        expect(p4Res).to.have.property('dataErr').to.equal('')
+      })
+    })
+
+    describe('Try error handle', () => {
+      it('Bad command return an error', async () => {
+        p4Res = await p4api.rawCmd('bad command')
+        expect(p4Res).to.have.property('dataOut').to.equal('')
+        expect(p4Res).to.have.property('dataErr')
+      })
+    })
+  })
+})
