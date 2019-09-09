@@ -78,13 +78,31 @@ const p4 = new P4({
 })
 ```
 
+> :warning: **WARNING**: <br/>
+> P4CLIENT, P4PORt & P4USER will never be overloaded with variable set in a P4CONFIG file
+
+
 ### Attributs
 There is no public attribut.
 ### Methods
 #### Change environment variables
+`setOpts(opt)` and `addOpts(opt)` allow you to set or merge environment variables.
+``` javascript
+import {P4} from "p4api"
+const p4 = new P4({P4PORT: "p4server:1666"})
+
+p4.setOpts({env:{P4PORT: "newServer:1666"}})
+p4.addOpts({env:{P4USER: "bob", P4CLIENT="bob_client"}}
+``` 
+Where:
+- `opt` is the option parameter injected in `spawn()` function
+> :warning: **WARNING**: <br/>
+> In the most current case, use only the field `env` in `opt`.<br/>
+> Use other fields than `env` is not tested !
+
 
 #### Marshal syntax commands
-```cmd()``` and ```cmdSync()``` allow to execute any p4 command using Marshal syntax (global p4 option -G).
+```cmd(p4Cmd, [input])``` and ```cmdSync(p4Cmd, [input])``` allow to execute any p4 command using Marshal syntax (global p4 option -G).
 ``` javascript
 import {P4} from "p4api"
 const p4 = new P4({P4PORT: "p4server:1666"})
@@ -114,7 +132,6 @@ try {
 }
 ```
 Where:
-
 - `p4Cmd` is the Perforce command (string) with options separated with space.
 - `input` is a optional string or object for input value (like password for login command or client object for client command).
 
@@ -128,8 +145,12 @@ Where:
 - `error`: if exists, list of all result with code=error
  
 #### Row syntax commands
-```rawCmd()``` and ```rawCmdSync()``` allow to execute any p4 command using text syntax.
+```rawCmd(p4Cmd, [input])``` and ```rawCmdSync(p4Cmd, [input])``` allow to execute any p4 command using text syntax.
 Arguments and result are similar to the last method except that the marshalled syntax is replaced with a raw text syntax.
+Both raw methods return result as the following structure:
+- `text`: success result string or empty string 
+- `error`: error result string or empty string
+
 ### Error handling
 When timeout is reached, cmd is rejected and cmdSync is throwed 
 with a ```P4ApiTimeoutError``` ```Error``` instance 

@@ -72,7 +72,7 @@ export class P4 {
     }
   }
 
-  static _formatResuslt (command, dataOut, dataErr) {
+  static _formatResult (command, dataOut, dataErr) {
     // Format the result  like an object :
     // {'stat':[{},{},...], 'error':[{},{},...],
     //  'value':{'code':'text' or 'binary', 'data':'...'},
@@ -176,7 +176,7 @@ export class P4 {
         }
 
         dataOut = convertOut(dataOut)
-        const result = P4._formatResuslt(command, dataOut, dataErr)
+        const result = P4._formatResult(command, dataOut, dataErr)
         // console.log('-P4 ', command, JSON.stringify(result));
         resolve(result)
       })
@@ -217,7 +217,7 @@ export class P4 {
 
     dataOut = convertOut(child.stdout)
     dataErr = child.stderr
-    const result = P4._formatResuslt(command, dataOut, dataErr)
+    const result = P4._formatResult(command, dataOut, dataErr)
     // console.log('-P4 ', command, JSON.stringify(result));
     return result
   };
@@ -284,8 +284,8 @@ export class P4 {
         }
 
         const result = {
-          dataOut: dataOut.toString(),
-          dataErr: dataErr.toString()
+          text: dataOut.toString(),
+          error: dataErr.toString()
         }
         // console.log('-P4 ', command, JSON.stringify(result));
         resolve(result)
@@ -322,8 +322,8 @@ export class P4 {
     dataOut = child.stdout
     dataErr = child.stderr
     const result = {
-      dataOut: dataOut.toString(),
-      dataErr: dataErr.toString()
+      text: dataOut.toString(),
+      error: dataErr.toString()
     }
     // console.log('-P4 ', command, JSON.stringify(result));
     return result
