@@ -277,13 +277,13 @@ describe('p4api test', () => {
       it('Login with bad pwd return Error', async () => {
         p4Res = await p4api.rawCmd('login', 'badPassword')
         // console.dir(p4Res);
-        expect(p4Res).to.have.property('dataOut').to.include('Enter password')
-        expect(p4Res).to.have.property('dataErr').to.include('Password invalid')
+        expect(p4Res).to.have.property('text').to.include('Enter password')
+        expect(p4Res).to.have.property('error').to.include('Password invalid')
       })
       it('Login with good pwd return User & Expiration', async () => {
         p4Res = await p4api.rawCmd('login', 'thePassword')
-        expect(p4Res).to.have.property('dataOut').to.include('Enter password')
-        expect(p4Res).to.have.property('dataErr').to.equal('')
+        expect(p4Res).to.have.property('text').to.include('Enter password')
+        expect(p4Res).to.have.property('error').to.equal('')
         // expect(p4Res).to.have.property('stat').that.is.an('array')
         // expect(p4Res.stat[0]).to.have.any.keys('User', 'Expiration')
         // expect(p4Res.stat[0].User).to.equal('bob')
@@ -319,8 +319,8 @@ Backup: enable
 
 `)
         // console.dir(p4Res)
-        expect(p4Res).to.have.property('dataOut').to.include('Client myClientSync saved.')
-        expect(p4Res).to.have.property('dataErr').to.equal('')
+        expect(p4Res).to.have.property('text').to.include('Client myClientSync saved.')
+        expect(p4Res).to.have.property('error').to.equal('')
       })
     })
 
@@ -353,24 +353,24 @@ Backup: enable
 
 `)
         // console.dir(p4Res)
-        expect(p4Res).to.have.property('dataOut').to.include('Client myClientSync not changed.')
-        expect(p4Res).to.have.property('dataErr').to.equal('')
+        expect(p4Res).to.have.property('text').to.include('Client myClientSync not changed.')
+        expect(p4Res).to.have.property('error').to.equal('')
       })
     })
 
     describe('Try P4 result', () => {
       it('P4 depots return the list of depots in stat', async () => {
         p4Res = await p4api.rawCmd('depots')
-        expect(p4Res).to.have.property('dataOut')
-        expect(p4Res).to.have.property('dataErr').to.equal('')
+        expect(p4Res).to.have.property('text')
+        expect(p4Res).to.have.property('error').to.equal('')
       })
     })
 
     describe('Try error handle', () => {
       it('Bad command return an error', async () => {
         p4Res = await p4api.rawCmd('bad command')
-        expect(p4Res).to.have.property('dataOut').to.equal('')
-        expect(p4Res).to.have.property('dataErr')
+        expect(p4Res).to.have.property('text').to.equal('')
+        expect(p4Res).to.have.property('error')
       })
     })
   })
