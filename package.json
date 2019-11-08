@@ -1,6 +1,6 @@
 {
   "name": "p4api",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "description": "Simple Perforce API",
   "main": "lib/p4api.js",
   "files": [
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "webpack --env dev && webpack --env build && npm run test",
     "dev": "webpack --progress --colors --watch --env dev",
-    "test": "mocha --timeout 10000 --require @babel/register --colors ./test/*.spec.js",
+    "test":       "mocha --timeout 0 --require @babel/register --colors ./test/*.spec.js",
     "test:watch": "mocha --timeout 0 --require @babel/register --colors -w ./test/*.spec.js"
   },
   "repository": {
@@ -18,7 +18,9 @@
   },
   "keywords": [
     "perforce",
-    "p4"
+    "p4",
+    "javascript",
+    "marshal"
   ],
   "author": "pisamad",
   "license": "BSD-3-Clause",

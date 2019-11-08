@@ -210,15 +210,17 @@ export class P4 {
 
     const p4Cmd = ['-G'].concat(this.globalOptions, shlex(command))
     const child = spawnSync('p4', p4Cmd, this.options)
-
-    if (child.signal != null) {
-      throw new P4apiTimeoutError(this.options.timeout)
+    if (child.error !== undefined) {
+      if (child.signal != null) {
+        throw new P4apiTimeoutError(this.options.timeout)
+      }
+      throw child.error
     }
 
     dataOut = convertOut(child.stdout)
     dataErr = child.stderr
     const result = P4._formatResult(command, dataOut, dataErr)
-    // console.log('-P4 ', command, JSON.stringify(result));
+    // console.log('-P4 ', command, JSON.stringify(result))
     return result
   };
 
@@ -314,9 +316,11 @@ export class P4 {
 
     const p4Cmd = [].concat(this.globalOptions, shlex(command))
     const child = spawnSync('p4', p4Cmd, this.options)
-
-    if (child.signal != null) {
-      throw new P4apiTimeoutError(this.options.timeout)
+    if (child.error !== undefined) {
+      if (child.signal != null) {
+        throw new P4apiTimeoutError(this.options.timeout)
+      }
+      throw child.error
     }
 
     dataOut = child.stdout

@@ -112,6 +112,37 @@ describe('p4api test', () => {
     })
   })
 
+  describe('Client P4 not found', () => {
+    let p4api
+
+    before(async () => {
+      p4api = new P4({ P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 5000 })
+      p4api.addOpts({ env: { Path: '' } })
+    })
+    beforeEach(() => {
+      p4Res = null
+    })
+
+    after(async () => {
+    })
+
+    describe('P4 client missing raise a exception', () => {
+      const cmd = 'issue10'
+      it('For cmdSync', () => {
+        assert.throws(() => p4api.cmdSync(cmd))
+      })
+      it('For cmd', (done) => {
+        p4api.cmd(cmd).should.be.rejectedWith(Error).notify(done)
+      })
+      it('For rawCmdSync', () => {
+        assert.throws(() => p4api.rawCmdSync(cmd))
+      })
+      it('For rawCmd', (done) => {
+        p4api.rawCmd(cmd).should.be.rejectedWith(Error).notify(done)
+      })
+    })
+  })
+
   describe('Connected commands', () => {
     let p4api
 
@@ -184,7 +215,7 @@ describe('p4api test', () => {
           Owner: 'bob',
           Host: '',
           Description: 'Created by bob.',
-          Root: 'C:\\',
+          Root: 'C:\\temp\\p4',
           Options: 'noallwrite noclobber nocompress unlocked nomodtime normdir',
           SubmitOptions: 'submitunchanged',
           LineEnd: 'local',

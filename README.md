@@ -1,7 +1,7 @@
 # p4api
 With p4api, you will be able to execute Perforce commands in 4 mode in your choice:
 
-|                    | Async command  | Sync comman |
+|                    | Async command  | Sync command |
 |:--------------:    |:-------------  |:------------|
 | **Marshal syntax** | ```cmd()```    | ```cmdSync()```   |
 | **Raw syntax**     | ```rawCmd()``` | ```rawCmdSync()```|
@@ -316,4 +316,5 @@ if (DoNotNeedResult) {
   result = await p4Promise;
 }
 ```
+---
 
