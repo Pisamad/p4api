@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import PyMarshal from 'py-marshal'
 
 /**
  * A function for parsing shell-like quoted arguments into an array,
@@ -58,7 +59,7 @@ export function shlex (str) {
       lookForClose = -1
     }
   }
-  return quoteOpen ? false : out
+  return quoteOpen ? [] : out
 }
 
 /**
@@ -69,9 +70,7 @@ export function shlex (str) {
 export function convertOut (outString) {
   const buf = Buffer.isBuffer(outString) ? outString : Buffer.from(outString)
   const result = []
-  let index = 0
   let i = 0
-  let key = ''
   let prompt = ''
   const bufLength = buf.length
 
@@ -83,98 +82,29 @@ export function convertOut (outString) {
     prompt += elt
     i++
   }
-  result[index] = { code: 'prompt', prompt: prompt }
+  result.push({ code: 'prompt', prompt: prompt })
 
-  // Parse answer
-  while (i < bufLength) {
-    const elt = buf.toString('ascii', i, i + 1)
-
-    switch (elt) {
-      case '{':
-        // Start of a new element
-        index++
-        result[index] = {}
-        i++
-        key = ''
-        break
-      case 's':
-        // A text
-        i++
-        const lg = buf.readUInt32LE(i)
-
-        i += 4
-        const str = buf.toString('ascii', i, i + lg)
-
-        i += lg
-        if (key === '') {
-          // Text is a key
-          key = str
-        } else {
-          // Text is the value of last key
-          result[index][key] = str
-          key = ''
-        }
-        break
-      case 'i':
-        // A integer
-        i++
-        const val = buf.readUInt32LE(i)
-
-        i += 4
-        if (key === '') {
-          // Text is a key
-          // !!! Syntax error
-          console.error('Syntax error')
-        } else {
-          // Text is the value of last key
-          result[index][key] = val
-          key = ''
-        }
-        break
-      case '0':
-        // End of the element
-        i++
-        break
-      default:
-        // Syntax error, we return the original string
-        console.error('Syntax error or result is a string')
-        return outString
-    }
+  const decoder = new PyMarshal(buf.slice(i))
+  while (decoder.moreData) {
+    result.push(decoder.read())
   }
+
   return result
 }
 
 /**
- * Takes a object and transform it in marchal format and input into stream to p4 -G
+ * Takes a object and transform it in marshal format and input into stream to p4 -G
  * @param {object} inObject - The input string or buffer to analyse
- * @param {stream} stream - A writable stream where result will be sent
+ * @param {SimpleStream} inputStream - A writable stream where result will be sent
  * @returns {string} the result
  */
-export function writeMarchal (inObject, stream) {
+export function writeMarshal (inObject, inputStream) {
   if (typeof inObject === 'string') {
-    stream.write(Buffer.from(inObject))
+    inputStream.write(Buffer.from(inObject))
   } else {
-    stream.write(Buffer.from('{'))
-
-    for (const key in inObject) {
-      const value = String(inObject[key])
-      const keyLen = Buffer.alloc(4)
-      const valueLen = Buffer.alloc(4)
-
-      keyLen.writeUInt32LE(key.length, 0)
-      valueLen.writeUInt32LE(value.length, 0)
-      stream.write(Buffer.from('s'))
-      stream.write(keyLen)
-      stream.write(Buffer.from(key))
-      stream.write(Buffer.from('s'))
-      stream.write(valueLen)
-      stream.write(Buffer.from(value))
-      // console.log(keyLen, key.length, key, valueLen, value.length, value);
-    }
-
-    stream.write(Buffer.from('0'))
+    inputStream.write(PyMarshal.writeToBuffer(inObject))
   }
-  stream.end()
+  inputStream.end()
 }
 
 /**

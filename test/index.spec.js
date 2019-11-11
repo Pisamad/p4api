@@ -1,8 +1,9 @@
-/* global describe, it, before */
+/* global describe, it, before, beforeEach, after */
+/* eslint-disable no-unused-expressions */
 
 import chai from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { P4, P4apiTimeoutError } from '../lib/p4api'
+import { P4 } from '..'
 import { server } from './helper/server'
 import _ from 'lodash'
 
@@ -61,11 +62,11 @@ describe('p4api test', () => {
         const p4api = new P4({ P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout })
 
         it('Async Timeout exception', (done) => {
-          p4api.cmd('login', 'thePassword').should.be.rejectedWith(P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached').notify(done)
+          p4api.cmd('login', 'thePassword').should.be.rejectedWith(P4.TimeoutError, 'Timeout ' + timeout + 'ms reached').notify(done)
         })
 
         it('Sync Timeout exception', () => {
-          assert.throws(() => p4api.cmdSync('login', 'thePassword'), P4apiTimeoutError, 'Timeout ' + timeout + 'ms reached')
+          assert.throws(() => p4api.cmdSync('login', 'thePassword'), P4.TimeoutError, 'Timeout ' + timeout + 'ms reached')
         })
       })
     });
@@ -129,16 +130,16 @@ describe('p4api test', () => {
     describe('P4 client missing raise a exception', () => {
       const cmd = 'issue10'
       it('For cmdSync', () => {
-        assert.throws(() => p4api.cmdSync(cmd))
+        assert.throws(() => p4api.cmdSync(cmd), p4api.Error)
       })
       it('For cmd', (done) => {
-        p4api.cmd(cmd).should.be.rejectedWith(Error).notify(done)
+        p4api.cmd(cmd).should.be.rejectedWith(p4api.Error).notify(done)
       })
       it('For rawCmdSync', () => {
-        assert.throws(() => p4api.rawCmdSync(cmd))
+        assert.throws(() => p4api.rawCmdSync(cmd), p4api.Error)
       })
       it('For rawCmd', (done) => {
-        p4api.rawCmd(cmd).should.be.rejectedWith(Error).notify(done)
+        p4api.rawCmd(cmd).should.be.rejectedWith(p4api.Error).notify(done)
       })
     })
   })
@@ -259,7 +260,8 @@ describe('p4api test', () => {
         Owner: 'bob',
         Description: '123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0',
         View0: '//team2/...',
-        Revision: '@1' }]
+        Revision: '@1'
+      }]
 
       it('Async : Doesnt failed when a field input has lenght = 128', async () => {
         p4Res = await p4api.cmd(...command)

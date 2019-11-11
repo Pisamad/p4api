@@ -6,20 +6,41 @@
 import Q from 'bluebird'
 import _ from 'lodash'
 import { spawn, spawnSync } from 'child_process'
+import stream from 'stream'
 
-import { shlex, convertOut, writeMarchal, createErrorType } from './helpers'
+import { shlex, convertOut, writeMarshal, createErrorType } from './helpers'
 
+// Allow promise cancellation
 Q.config({
   cancellation: true
 })
 
-export const P4apiTimeoutError = createErrorType('P4apiTimeoutError', function (timeout, message) {
+export const P4apiTimeoutError = createErrorType('P4apiTimeoutError', function (timeout) {
   this.timeout = timeout
   this.message = 'Timeout ' + timeout + 'ms reached.'
 })
 
+export const P4apiError = createErrorType('P4apiError', function (message) {
+  this.message = message
+})
+
+class SimpleStream extends stream {
+  constructor (arg) {
+    super()
+    this.arg = arg
+  }
+
+  write (s) {
+    this.arg.input = Buffer.concat([this.arg.input, Buffer.from(s)])
+  }
+
+  end () {
+  }
+}
+
 export class P4 {
-  constructor (p4set = {}) {
+  constructor (p4set = {}, debug = false) {
+    this.debug = debug
     this.cwd = process.cwd()
     this.options = {
       env: {
@@ -115,10 +136,43 @@ export class P4 {
     return result
   }
 
+  _execCmd (p4Cmd, reject, onCancel) {
+    const result = {
+      timeout: {
+        handle: null,
+        fired: false
+      },
+      child: null
+    }
+    if (this.options.env.P4API_TIMEOUT > 0) {
+      result.timeout.handle = setTimeout(function () {
+        result.timeout.fired = true
+        result.timeout.handle = null
+        result.child.kill()
+      }, this.options.env.P4API_TIMEOUT)
+    }
+
+    result.child = spawn('p4', p4Cmd, this.options)
+
+    onCancel(() => {
+      result.child.kill()
+    })
+
+    result.child.on('error', () => {
+      if (result.timeout.handle !== null) {
+        clearTimeout(result.timeout.handle)
+        result.timeout.handle = null
+      }
+      reject(new P4apiError())
+    })
+
+    return result
+  }
+
   /**
    * Run a command, used internally but public.
    * @param {string} command - The command to run
-   * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
+   * @param {object} dataIn - object to convert to marshal and to passe to P4 stdin
    */
   cmd (command, dataIn) {
     return new Q((resolve, reject, onCancel) => {
@@ -126,34 +180,10 @@ export class P4 {
       let dataErr = Buffer.alloc(0)
 
       const p4Cmd = ['-G'].concat(this.globalOptions, shlex(command))
-      const timeout = this.options.env.P4API_TIMEOUT
-      let timeoutHandle = null
-      let timeoutFired = false
-
-      if (timeout > 0) {
-        timeoutHandle = setTimeout(function () {
-          timeoutFired = true
-          timeoutHandle = null
-          child.kill()
-        }, timeout)
-      }
-
-      const child = spawn('p4', p4Cmd, this.options)
-
-      onCancel(() => {
-        child.kill()
-      })
-
-      child.on('error', err => {
-        if (timeoutHandle !== null) {
-          clearTimeout(timeoutHandle)
-          timeoutHandle = null
-        }
-        reject(err)
-      })
+      const { timeout, child } = this._execCmd(p4Cmd, reject, onCancel)
 
       if (dataIn) {
-        writeMarchal(dataIn, child.stdin)
+        writeMarshal(dataIn, child.stdin)
       }
 
       child.stdout.on('data', data => {
@@ -165,43 +195,35 @@ export class P4 {
       })
 
       child.on('close', () => {
-        if (timeoutFired) {
-          reject(new P4apiTimeoutError(timeout))
+        if (timeout.fired) {
+          reject(new P4apiTimeoutError(this.options.env.P4API_TIMEOUT))
           return
         }
 
-        if (timeoutHandle !== null) {
-          clearTimeout(timeoutHandle)
-          timeoutHandle = null
+        if (timeout.handle !== null) {
+          clearTimeout(timeout.handle)
+          timeout.handle = null
         }
 
         dataOut = convertOut(dataOut)
         const result = P4._formatResult(command, dataOut, dataErr)
-        // console.log('-P4 ', command, JSON.stringify(result));
+        if (this.debug) {
+          console.log('-P4 ', command, JSON.stringify(result))
+        }
         resolve(result)
       })
-    }
-    )
+    })
   }
 
   /**
    * Synchronously Run a command .
    * @param {string} command - The command to run
-   * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
+   * @param {object} dataIn - object to convert to marshal and to passe to P4 stdin
    */
   cmdSync (command, dataIn) {
-    let dataOut = Buffer.alloc(0)
-    let dataErr = Buffer.alloc(0)
-
     this.options.input = Buffer.alloc(0)
     if (dataIn) {
-      writeMarchal(dataIn, {
-        write: s => {
-          this.options.input = Buffer.concat([this.options.input, Buffer.from(s)])
-        },
-        end: () => {
-        }
-      })
+      writeMarshal(dataIn, new SimpleStream(this.options))
     }
 
     if (this.options.env.P4API_TIMEOUT > 0) {
@@ -214,20 +236,22 @@ export class P4 {
       if (child.signal != null) {
         throw new P4apiTimeoutError(this.options.timeout)
       }
-      throw child.error
+      throw new P4apiError(child.error)
     }
 
-    dataOut = convertOut(child.stdout)
-    dataErr = child.stderr
+    const dataOut = convertOut(child.stdout)
+    const dataErr = child.stderr
     const result = P4._formatResult(command, dataOut, dataErr)
-    // console.log('-P4 ', command, JSON.stringify(result))
+    if (this.debug) {
+      console.log('-P4 ', command, JSON.stringify(result))
+    }
     return result
   };
 
   /**
    * Run a command.
    * @param {string} command - The command to run
-   * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
+   * @param {object} dataIn - object to convert to marshal and to passe to P4 stdin
    */
   rawCmd (command, dataIn) {
     return new Q((resolve, reject, onCancel) => {
@@ -235,31 +259,7 @@ export class P4 {
       let dataErr = Buffer.alloc(0)
 
       const p4Cmd = [].concat(this.globalOptions, shlex(command))
-      const timeout = this.options.env.P4API_TIMEOUT
-      let timeoutHandle = null
-      let timeoutFired = false
-
-      if (timeout > 0) {
-        timeoutHandle = setTimeout(function () {
-          timeoutFired = true
-          timeoutHandle = null
-          child.kill()
-        }, timeout)
-      }
-
-      const child = spawn('p4', p4Cmd, this.options)
-
-      onCancel(() => {
-        child.kill()
-      })
-
-      child.on('error', err => {
-        if (timeoutHandle !== null) {
-          clearTimeout(timeoutHandle)
-          timeoutHandle = null
-        }
-        reject(err)
-      })
+      let { timeoutHandle, timeoutFired, child } = this._execCmd(p4Cmd, reject, onCancel)
 
       if (dataIn) {
         child.stdin.write(dataIn)
@@ -276,7 +276,7 @@ export class P4 {
 
       child.on('close', () => {
         if (timeoutFired) {
-          reject(new P4apiTimeoutError(timeout))
+          reject(new P4apiTimeoutError(this.options.env.P4API_TIMEOUT))
           return
         }
 
@@ -299,12 +299,9 @@ export class P4 {
   /**
    * Synchronously Run a command .
    * @param {string} command - The command to run
-   * @param {object} dataIn - object to convert to marchal and to passe to P4 stdin
+   * @param {object} dataIn - object to convert to marshal and to passe to P4 stdin
    */
   rawCmdSync (command, dataIn) {
-    let dataOut = Buffer.alloc(0)
-    let dataErr = Buffer.alloc(0)
-
     this.options.input = Buffer.alloc(0)
     if (dataIn) {
       this.options.input = Buffer.from(dataIn)
@@ -320,16 +317,18 @@ export class P4 {
       if (child.signal != null) {
         throw new P4apiTimeoutError(this.options.timeout)
       }
-      throw child.error
+      throw new P4apiError(child.error)
     }
 
-    dataOut = child.stdout
-    dataErr = child.stderr
+    const dataOut = child.stdout
+    const dataErr = child.stderr
     const result = {
       text: dataOut.toString(),
       error: dataErr.toString()
     }
-    // console.log('-P4 ', command, JSON.stringify(result));
+    if (this.debug) {
+      console.log('-P4 ', command, JSON.stringify(result))
+    }
     return result
   };
 
@@ -345,11 +344,14 @@ export class P4 {
 
     const visualCmd = options.concat(shlex(cmd))
 
-    return new Q((resolve, reject) => {
+    return new Q((resolve) => {
       spawn('p4vc', visualCmd).on('close', resolve)
     })
   };
 }
+
+P4.prototype.Error = P4apiError
+P4.prototype.TimeoutError = P4apiTimeoutError
 
 // Named values for error severities returned by
 P4.prototype.SEVERITY = {

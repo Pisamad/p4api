@@ -2,19 +2,19 @@
  * Manage local P4 server for test
  */
 
-import shell from 'shelljs';
-import {P4} from '../../lib/p4api';
-import _ from 'lodash';
-import Q from 'bluebird';
+import shell from 'shelljs'
+import { P4 } from '../..'
+import _ from 'lodash'
+import Q from 'bluebird'
 
-const p4d = '"C:/Program Files/Perforce/Server/p4d.exe" ';
-const serverName = 'P4TestServer';
+const p4d = '"C:/Program Files/Perforce/Server/p4d.exe" '
+const serverName = 'P4TestServer'
 
-let p4Admin = new P4({P4PORT: 'localhost:1999', P4USER: 'admin', P4CHARSET: 'utf8'});
-const Users = ['bob', 'alice'];
-const Depots = ['team1', 'team2'];
+const p4Admin = new P4({ P4PORT: 'localhost:1999', P4USER: 'admin', P4CHARSET: 'utf8' })
+const Users = ['bob', 'alice']
+const Depots = ['team1', 'team2']
 
-export let server = {
+export const server = {
   create,
   start,
   stop,
@@ -23,12 +23,12 @@ export let server = {
   Depots,
   Users,
   silent: false
-};
+}
 
-function isActive() {
-  let out = p4Admin.cmdSync('login -s');
+function isActive () {
+  const out = p4Admin.cmdSync('login -s')
 
-  return (out.error === undefined);
+  return (out.error === undefined)
 }
 
 /**
@@ -41,23 +41,23 @@ function isActive() {
  * with 3 Depots : team1, team2, team3
  *
  */
-async function create() {
+async function create () {
   try {
-    await stop();
+    await stop()
   } catch (e) {
-    console.log(e);
+    console.log(e)
     // Nothing to do
   }
-  let pwd = shell.pwd();
+  const pwd = shell.pwd()
   // Goto ~/P4Server empty
 
-  shell.cd();
-  shell.rm('-rf', serverName);
+  shell.cd()
+  shell.rm('-rf', serverName)
 
-  shell.mkdir(serverName);
-  shell.cd(serverName);
+  shell.mkdir(serverName)
+  shell.cd(serverName)
 
-  await start();
+  await start()
 
   // Add Users
   _.map(Users, (user) => {
@@ -65,21 +65,21 @@ async function create() {
       User: user,
       Email: user + '@p4api',
       FullName: user
-    });
-  });
+    })
+  })
   // Allow only admin as super user
   p4Admin.cmdSync('user -i -f', {
     User: 'admin',
     Email: 'admin@p4api',
     FullName: 'Admin'
-  });
+  })
   p4Admin.cmdSync('protect -i', {
     Protections0: 'write user * * //...',
     Protections1: 'super user admin * //...'
-  });
+  })
   _.map(Users, function (user) {
-    p4Admin.cmdSync('password ' + user, 'thePassword\nthePassword');
-  });
+    p4Admin.cmdSync('password ' + user, 'thePassword\nthePassword')
+  })
 
   // Add some Depots
   p4Admin.cmdSync('depot -i', {
@@ -87,71 +87,71 @@ async function create() {
     Type: 'stream',
     StreamDepth: '//dummy/1',
     Map: 'dummy/...'
-  });
+  })
   _.map(Depots, function (depot) {
     p4Admin.cmdSync('depot -i', {
       Depot: depot,
       Type: 'local',
       Map: depot + '/...'
-    });
-  });
+    })
+  })
   // Stop the server
   try {
-    await stop();
+    await stop()
   } finally {
-    shell.cd(pwd);
+    shell.cd(pwd)
   }
 }
 
 /**
  * Start the server
  */
-async function start() {
-  let pwd = shell.pwd();
+async function start () {
+  const pwd = shell.pwd()
 
   await new Q((resolve, reject) => {
     // Goto ~/P4Server
-    shell.cd();
-    shell.cd(serverName);
+    shell.cd()
+    shell.cd(serverName)
     // Force utf8 mode
-    shell.exec(p4d + '-q -xi', {silent: server.silent});
+    shell.exec(p4d + '-q -xi', { silent: server.silent })
 
     // Use 1999 port. 1666 could be use by DVCS
-    let dataOut = '';
+    let dataOut = ''
 
-    shell.exec(p4d + '-p 1999 -L p4.log -J p4.jnl -r .', {async: true, silent: server.silent})
+    shell.exec(p4d + '-p 1999 -L p4.log -J p4.jnl -r .', { async: true, silent: server.silent })
       .on('error', (err) => {
-        reject(err);
+        reject(err)
       })
       .on('close', () => {
-        reject(new Error('server is stopped'));
+        reject(new Error('server is stopped'))
       })
       .stdout.on('data', (data) => {
-        dataOut += data;
+        dataOut += data
         // console.info('data',data)
         if (dataOut.includes('Perforce Server starting...')) {
-          resolve();
+          resolve()
         }
-      });
+      })
   })
     .finally(() => {
-      shell.cd(pwd);
+      shell.cd(pwd)
       //      console.log('*** START SERVER ***')
-    });
+    })
 }
 
 /**
  * Stop the server
  */
-async function stop() {
-  await p4Admin.cmd('admin stop');
-  await Q.delay(2000);
+async function stop () {
+  await p4Admin.cmd('admin stop')
+  await Q.delay(2000)
 //  console.log('*** STOP SERVER ***')
 }
 
-async function empty() {
-  await Q.map(Depots, async (depot) => (
-    await p4Admin.cmd('obliterate -y //' + depot + '/...')
-  ));
+async function empty () {
+  await Q.map(Depots, (depot) => (
+    p4Admin.cmd('obliterate -y //' + depot + '/...')
+  ))
 //  console.log('*** EMPTY SERVER ***')
 }

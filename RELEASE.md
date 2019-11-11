@@ -1,3 +1,9 @@
+#V3.3.1
+## Improvements and optimization
+* Add Error attribut for p4 execution error (see issue #10)
+* Error & Timeout Error are static attributs 
+* Use py-marshal package
+
 #V3.3.0
 ## Major Features and Improvements
 * Add rawCmd & rawCmdSync command

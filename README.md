@@ -1,5 +1,5 @@
 # p4api
-With p4api, you will be able to execute Perforce commands in 4 mode in your choice:
+With p4api, you can execute Perforce commands according to 4 modes in your choice:
 
 |                    | Async command  | Sync command |
 |:--------------:    |:-------------  |:------------|
@@ -33,12 +33,12 @@ All these method belong to class P4 provided by the module p4api: [See detail he
     + [Marshal syntax commands](#marshal-syntax-commands)
     + [Row syntax commands](#row-syntax-commands)
   * [Error handling](#error-handling)
-    + [Cancellation feature](#cancellation-feature--)
+    + [Cancellation feature](#cancellation-feature)
 - [Examples](#examples)
   * [List of depots](#list-of-depots)
   * [Command Error](#command-error)
-  * [Login (command with prompt and input)](#login--command-with-prompt-and-input-)
-  * [Check Login (command with param)](#check-login--command-with-param-)
+  * [Login (command with prompt and input)](#login-command-with-prompt-and-input)
+  * [Check Login (command with param)](#check-login-command-with-param)
   * [Clear viewpathes of the current Client](#clear-viewpathes-of-the-current-client)
   * [Cancellation](#cancellation)
 ---
@@ -82,8 +82,12 @@ const p4 = new P4({
 > P4CLIENT, P4PORt & P4USER will never be overloaded with variable set in a P4CONFIG file
 
 
-### Attributs
-There is no public attribut.
+### Static Attributs
+| Name         | Description |
+|:------------|:------------|
+| Error        | Error instance |
+| TimeoutError | Error instance |
+
 ### Methods
 #### Change environment variables
 `setOpts(opt)` and `addOpts(opt)` allow you to set or merge environment variables.
@@ -152,12 +156,15 @@ Both raw methods return result as the following structure:
 - `error`: error result string or empty string
 
 ### Error handling
+If p4 client can not be executed (perforce not installed, bad path variable, ...), cmd is rejected and cmdSync 
+is throwed with a ```P4.Error``` ```Error``` instance.
+
 When timeout is reached, cmd is rejected and cmdSync is throwed 
-with a ```P4ApiTimeoutError``` ```Error``` instance 
-with message like ```'Timeout <timeout>ms reached')``` 
+with a ```P4.TimeoutError``` ```Error``` instance 
+with message like ```'Timeout <timeout>ms reached'``` 
 
 ``` javascript
-import {P4, P4apiTimeoutError} from "p4api";
+import {P4} from "p4api";
 let p4 = new P4({P4PORT: "p4server:1666", P4API_TIMEOUT: 5000});
 
 function P4Error(msg) {
@@ -170,12 +177,16 @@ async function p4(cmd, input) {
   try {
     out = await p4.cmd(cmd, input)
   } catch (err) {
-    if (err instanceof P4apiTimeoutError) {
+    if (err instanceof P4.TimeoutError) {
       // Time out error
       throw new Error("p4 timeout " + err.timeout + " ms");
     }
-    // Critical error : p4 is not installed ?
-    throw new Error("p4 not found");
+    if (err instanceof P4.Error) {
+      // Time out error
+      throw new Error("p4 execution error. Check perforce installation");
+    }
+    // Critical error : not expected
+    throw new Error("I don't know what appends");
   }
   if (out.error !== undefined) {
     // p4 command error
@@ -185,7 +196,7 @@ async function p4(cmd, input) {
 }
 ```
 
-#### Cancellation feature :
+#### Cancellation feature
 A promise returned by p4.cmd() can be canceled with ```cancel()``` method, killing launched p4 process.
 
 <a name="Examples"></a>
