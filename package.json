@@ -1,6 +1,6 @@
 {
   "name": "p4api",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Simple Perforce API",
   "main": "lib/p4api.js",
   "files": [
@@ -28,7 +28,6 @@
     "url": "https://github.com/Pisamad/p4api/issues"
   },
   "dependencies": {
-    "acorn": "^7.1.0",
     "bluebird": "^3.7.1",
     "lodash": "^4.17.15",
     "py-marshal": "^1.0.2",

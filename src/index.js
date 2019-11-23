@@ -4,7 +4,7 @@
  * license that can be found in the LICENSE file.
  */
 import Q from 'bluebird'
-import _ from 'lodash'
+import { assign, extend } from 'lodash'
 import { spawn, spawnSync } from 'child_process'
 import stream from 'stream'
 
@@ -21,7 +21,7 @@ export const P4apiTimeoutError = createErrorType('P4apiTimeoutError', function (
 })
 
 export const P4apiError = createErrorType('P4apiError', function (message) {
-  this.message = message
+  this.message = 'P4 execution error'
 })
 
 class SimpleStream extends stream {
@@ -49,7 +49,7 @@ export class P4 {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: this.cwd
     }
-    _.assign(this.options.env, process.env, p4set)
+    assign(this.options.env, process.env, p4set)
     this._setGlobalOptions()
   }
 
@@ -73,7 +73,7 @@ export class P4 {
   addOpts (opts) {
     Object.keys(opts).forEach(key => {
       if (!(key === 'cwd')) {
-        this.options[key] = _.extend(this.options[key] || {}, opts[key])
+        this.options[key] = extend(this.options[key] || {}, opts[key])
         this._setGlobalOptions()
       }
     })
