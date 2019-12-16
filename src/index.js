@@ -43,6 +43,7 @@ export class P4 {
     this.debug = debug
     this.cwd = process.cwd()
     this.options = {
+      binPath: '',
       env: {
         PWD: this.cwd
       },
@@ -152,7 +153,7 @@ export class P4 {
       }, this.options.env.P4API_TIMEOUT)
     }
 
-    result.child = spawn('p4', p4Cmd, this.options)
+    result.child = spawn(this.options.binPath + 'p4', p4Cmd, this.options)
 
     onCancel(() => {
       result.child.kill()
@@ -231,7 +232,7 @@ export class P4 {
     }
 
     const p4Cmd = ['-G'].concat(this.globalOptions, shlex(command))
-    const child = spawnSync('p4', p4Cmd, this.options)
+    const child = spawnSync(this.options.binPath + 'p4', p4Cmd, this.options)
     if (child.error !== undefined) {
       if (child.signal != null) {
         throw new P4apiTimeoutError(this.options.timeout)
@@ -312,7 +313,7 @@ export class P4 {
     }
 
     const p4Cmd = [].concat(this.globalOptions, shlex(command))
-    const child = spawnSync('p4', p4Cmd, this.options)
+    const child = spawnSync(this.options.binPath + 'p4', p4Cmd, this.options)
     if (child.error !== undefined) {
       if (child.signal != null) {
         throw new P4apiTimeoutError(this.options.timeout)
@@ -345,7 +346,7 @@ export class P4 {
     const visualCmd = options.concat(shlex(cmd))
 
     return new Q((resolve) => {
-      spawn('p4vc', visualCmd).on('close', resolve)
+      spawn(this.options.binPath + 'p4vc', visualCmd).on('close', resolve)
     })
   };
 }
