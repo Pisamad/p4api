@@ -1,3 +1,8 @@
+#V3.4.0
+## Change constructor syntax
+* Add binPath option
+* Change constructor option syntax (old syntax is still enable)
+
 #V3.3.1
 ## Improvements and optimization
 * Add Error attribut for p4 execution error (see issue #10)
