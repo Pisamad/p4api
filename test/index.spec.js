@@ -27,7 +27,7 @@ describe('p4api test', () => {
       p4Res = null
     })
     describe('P4 set', () => {
-      const p4api = new P4()
+      const p4api = new P4({ debug: false, binPath: '' })
 
       it('return a set of P4 env var', async () => {
         p4Res = await p4api.cmd('set')
@@ -59,7 +59,8 @@ describe('p4api test', () => {
 
     [1000, 2000].forEach(timeout => {
       describe('P4 login to muted server with timeout=' + timeout, () => {
-        const p4api = new P4({ P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout })
+        // const p4api = new P4({ P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout })
+        const p4api = new P4({ p4set: { P4PORT: 'local_host:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: timeout }, debug: true }, true)
 
         it('Async Timeout exception', (done) => {
           p4api.cmd('login', 'thePassword').should.be.rejectedWith(P4.TimeoutError, 'Timeout ' + timeout + 'ms reached').notify(done)
@@ -117,8 +118,8 @@ describe('p4api test', () => {
     let p4api
 
     before(async () => {
-      p4api = new P4({ P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 5000 })
-      p4api.addOpts({ env: { Path: '' } })
+      p4api = new P4({ p4set: { P4PORT: 'localhost:1999', P4USER: 'bob', P4CHARSET: 'utf8', P4API_TIMEOUT: 5000 }, binPath: 'badpath' })
+      // p4api.addOpts({ binPath: '' })
     })
     beforeEach(() => {
       p4Res = null

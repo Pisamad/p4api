@@ -4,7 +4,7 @@
  * license that can be found in the LICENSE file.
  */
 import Q from 'bluebird'
-import { assign, extend } from 'lodash'
+import { assign, extend, pickBy } from 'lodash'
 import { spawn, spawnSync } from 'child_process'
 import stream from 'stream'
 
@@ -39,17 +39,23 @@ class SimpleStream extends stream {
 }
 
 export class P4 {
-  constructor (p4set = {}, debug = false) {
-    this.debug = debug
+  /**
+   * P4 constructor (see readme.md)
+   * @param {*} options
+   * @param {*} debug : keep only for V3.2 compatibility. Else use options.debug
+   */
+  constructor (options = {}, debug = false) {
+    this.debug = debug || options.debug || false
     this.cwd = process.cwd()
     this.options = {
-      binPath: '',
+      binPath: options.binPath || '',
       env: {
         PWD: this.cwd
       },
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: this.cwd
     }
+    const p4set = options.p4set || pickBy(options, (e, k) => k.startsWith('P4'))
     assign(this.options.env, process.env, p4set)
     this._setGlobalOptions()
   }

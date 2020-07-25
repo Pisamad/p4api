@@ -57,29 +57,33 @@ To test it, you need to have installed "Helix Core Apps" and "Helix Versioning E
 ### Contructor
 ``` javascript
 import {P4} from "p4api"
-const p4 = new P4(option)
+const p4 = new P4({p4set:{}, binPath: '', debug: false})
 ```
-or
-``` javascript
-const P4 = require("p4api").P4
-const p4 = new P4(option)
-```
-where option is a set of P4 variables to apply as context when executing p4 commands:
-- all P4 environnment variables like P4PORT, P4CHARSET, P4USER, P4CLIENT, ...
-- p4api specific option like:
-  * P4API_TIMEOUT: timeout in ms for p4 commands process
+where 
+- ```p4set``` : a set of P4 variables to apply as context when executing p4 commands:
+    - all P4 environnment variables like P4PORT, P4CHARSET, P4USER, P4CLIENT, ...
+    - p4api specific option like:
+        * P4API_TIMEOUT: timeout in ms for p4 commands process
+ - ```binPath``` : a path prefix to add to the call for ```p4``` and ```p4vc```
+ - ```debug``` : if true, display some debug info
  
 Example:
 ``` javascript
-const p4 = new P4({
-    P4PORT: "myP4Server:1666",
-    P4CHARSET: "utf8",
-    P4API_TIMEOUT: 5000
+const p4 = new P4({ 
+    p4set: {
+        P4PORT: "myP4Server:1666",
+        P4CHARSET: "utf8",
+        P4API_TIMEOUT: 5000},
+    binPath: '/usr/sbin/'
 })
 ```
 
+> :information_source: **INFO**: <br/>
+> Old constructor syntax before V3.4 is still allowed.
+> Ex : ```p4 = new P4({P4PORT: "myP4Server:1666"})```
+
 > :warning: **WARNING**: <br/>
-> P4CLIENT, P4PORt & P4USER will never be overloaded with variable set in a P4CONFIG file
+> P4CLIENT, P4PORT & P4USER will never be overloaded with variable set in a P4CONFIG file
 
 
 ### Static Attributs
@@ -93,7 +97,7 @@ const p4 = new P4({
 `setOpts(opt)` and `addOpts(opt)` allow you to set or merge environment variables.
 ``` javascript
 import {P4} from "p4api"
-const p4 = new P4({P4PORT: "p4server:1666"})
+const p4 = new P4({p4set: {P4PORT: "p4server:1666"}})
 
 p4.setOpts({env:{P4PORT: "newServer:1666"}})
 p4.addOpts({env:{P4USER: "bob", P4CLIENT="bob_client"}}
@@ -109,7 +113,7 @@ Where:
 ```cmd(p4Cmd, [input])``` and ```cmdSync(p4Cmd, [input])``` allow to execute any p4 command using Marshal syntax (global p4 option -G).
 ``` javascript
 import {P4} from "p4api"
-const p4 = new P4({P4PORT: "p4server:1666"})
+const p4 = new P4({p4set: {P4PORT: "p4server:1666"}})
 
 // Asynchro mode
 p4.cmd(p4Cmd, input)
@@ -165,7 +169,7 @@ with message like ```'Timeout <timeout>ms reached'```
 
 ``` javascript
 import {P4} from "p4api";
-let p4 = new P4({P4PORT: "p4server:1666", P4API_TIMEOUT: 5000});
+let p4 = new P4({p4set: {{P4PORT: "p4server:1666", P4API_TIMEOUT: 5000}});
 
 function P4Error(msg) {
   this.name = "p4 error";
@@ -204,7 +208,7 @@ A promise returned by p4.cmd() can be canceled with ```cancel()``` method, killi
 ### List of depots
 ``` javascript
 import {P4} from "p4api";
-let p4 = new P4({P4PORT: "p4server:1666"});
+let p4 = new P4({p4set: {{P4PORT: "p4server:1666"}});
     
 p4.cmd("depots").then(function(out){console.log(out);});
 ```
