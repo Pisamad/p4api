@@ -1,3 +1,7 @@
+---
+# *This project is no longer maintained*
+---
+
 # p4api
 With p4api, you can execute Perforce commands according to 4 modes in your choice:
 
